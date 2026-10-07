@@ -264,5 +264,5 @@ function welcome(){$('#nm').value='';const L=LS.get('neko:players')||[],w=$('#pl
 $('#cn').onclick=welcome;
 $('#hb').onclick=()=>{persist();goHome()};
 if(ID){loadP();goHome()}else welcome();
-if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update()})}).catch(()=>{});{let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl){rl=1;location.reload()}})}
 </script></body></html>
