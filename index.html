@@ -168,7 +168,8 @@ function deal(level,seed){
   shuf(r,deep);const bs=[];[...cols,stock].forEach(a=>a.forEach((x,q)=>{if(isB(x))bs.push([a,q])}));
   for(const [a,q] of bs){const pos=deep.findIndex(([b,p])=>!isB(b[p]));if(pos<0)break;const [b,p]=deep.splice(pos,1)[0];[a[q],b[p]]=[b[p],a[q]]}}
  let fu=0;const seen=new Set();cols.forEach(c=>{const k=c.length-1;let tr=0;
-  while((seen.has(C[c[k]].v)||(isB(c[k])&&(hard||fu)))&&tr++<80){const j=ri(r,0,stock.length-1);if(isB(stock[j])||seen.has(C[stock[j]].v))continue;[c[k],stock[j]]=[stock[j],c[k]]}
+  const allowDup=r()<(hard?.25:.45);
+  while(((seen.has(C[c[k]].v)&&!allowDup)||(isB(c[k])&&(hard||fu)))&&tr++<80){const j=ri(r,0,stock.length-1);if(isB(stock[j])||seen.has(C[stock[j]].v))continue;[c[k],stock[j]]=[stock[j],c[k]]}
   if(isB(c[k]))fu=1;seen.add(C[c[k]].v)});
  if(isB(tp(stock))){const j=stock.findIndex(x=>!isB(x));if(j>=0){const k=stock.length-1;[stock[k],stock[j]]=[stock[j],stock[k]]}}
  return{cols,down:cols.map(c=>c.length-1),stock,waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0})),fo:[]}}
@@ -310,26 +311,32 @@ function tapCol(i){const s=G.s,c=s.cols[i];
 const pc=src=>{const [i,n]=src.slice(1).split(':').map(Number);return[i,n||1]};
 function srcList(src){if(src=='w')return G.s.waste.length?[tp(G.s.waste)]:[];const[i,n]=pc(src),c=G.s.cols[i];return c.slice(c.length-n)}
 function takeN(src){if(src=='w')return[G.s.waste.pop()];const[i,n]=pc(src),o=[];for(let k=0;k<n;k++)o.unshift(popC(G.s,i));return o}
-function tryTo(src,dst){const s=G.s,L=srcList(src);if(!L.length)return false;const ci=src=='w'?-1:pc(src)[0];
+function tryTo(src,dst,dry){const s=G.s,L=srcList(src);if(!L.length)return false;const ci=src=='w'?-1:pc(src)[0];
  if(dst=='f'){const ord=L.slice().reverse().sort((a,b)=>(C[b].t=='b')-(C[a].t=='b')),x=cl(s);
   for(const id of ord){if(!canF(x,id))return false;toF(x,id)}
-  LT={f:C[ord[0]].s};act(()=>{takeN(src);ord.forEach(id=>toF(s,id))});return true}
+  if(dry)return true;LT={f:C[ord[0]].s};act(()=>{takeN(src);ord.forEach(id=>toF(s,id))});return true}
  const j=+dst;if(ci==j||!(src=='w'?wfit(s,L[0],j):fits(s,L[0],j)))return false;
  if(ci>=0&&!s.cols[j].length&&s.cols[ci].length==L.length)return false;
- LT={c:j};act(()=>s.cols[j].push(...takeN(src)));return true}
+ if(dry)return true;LT={c:j};act(()=>s.cols[j].push(...takeN(src)));return true}
 let D=null,noClick=false;
-document.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-drag]');if(!el||$('#md').classList.contains('on'))return;
+document.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-drag]');if(!el||$('#md').classList.contains('on'))return;el.classList.remove('flipin');
  const r=el.getBoundingClientRect(),src=el.dataset.drag;let els=[el];
  if(src!='w'){const[i,n]=pc(src);els=[...el.parentNode.querySelectorAll('[data-drag]')].filter(x=>pc(x.dataset.drag)[1]<=n).sort((a,b)=>pc(b.dataset.drag)[1]-pc(a.dataset.drag)[1])}
  D={el,els,src,x0:e.clientX,y0:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,w:r.width,g:null}});
 document.addEventListener('pointermove',e=>{if(!D)return;
  if(!D.g){if(Math.hypot(e.clientX-D.x0,e.clientY-D.y0)<6)return;const g=document.createElement('div');g.className='ghost';g.style.width=D.w+'px';
-  const t0=D.els[0].offsetTop;D.els.forEach(x=>{const cp=x.cloneNode(true);cp.classList.remove('sel','flipin');cp.style.top=(x.offsetTop-t0)+'px';g.appendChild(cp);x.style.visibility='hidden'});
+  const t0=D.els[0].offsetTop;D.els.forEach(x=>{const cp=x.cloneNode(true);cp.classList.remove('sel','flipin');cp.style.top=(x.offsetTop-t0)+'px';cp.style.left='0px';g.appendChild(cp);x.style.visibility='hidden'});
   g.style.height=(D.els[D.els.length-1].offsetTop-t0+D.w*1.4)+'px';document.body.appendChild(g);D.g=g}
  e.preventDefault();D.g.style.left=e.clientX-D.dx+'px';D.g.style.top=e.clientY-D.dy+'px'},{passive:false});
 function endDrag(e){if(!D)return;const d=D;D=null;if(!d.g)return;noClick=true;setTimeout(()=>noClick=false,50);const gn=d.g.firstChild,gr=gn.getBoundingClientRect();d.g.remove();LT=null;
  const t=document.elementFromPoint(e.clientX,e.clientY),f=t&&t.closest('[data-f],#fnd'),c=t&&t.closest('[data-col]');
- G.sel=null;if((f&&tryTo(d.src,'f'))||(c&&tryTo(d.src,c.dataset.col))){if(G&&LT)fly(gr,gn,tgtEl(),LT.f!=null)}else{render();why(d.src,f?'f':c?c.dataset.col:null)}}
+ G.sel=null;let dst=null;
+ if(f&&tryTo(d.src,'f',1))dst='f';else if(c&&tryTo(d.src,c.dataset.col,1))dst=c.dataset.col;
+ else{const cx=gr.left+gr.width/2,cy=gr.top+gr.height/2;let best=1e9;
+  const cand=[['f',$('#fnd')],...[...document.querySelectorAll('[data-col]')].map(x=>[x.dataset.col,x.querySelector('.card:last-of-type')||x])];
+  for(const [k,el] of cand){if(!el||!tryTo(d.src,k,1))continue;const r=el.getBoundingClientRect(),dx=Math.max(r.left-cx,0,cx-r.right),dy=Math.max(r.top-cy,0,cy-r.bottom),dd=Math.hypot(dx,dy);if(dd<best){best=dd;dst=k}}
+  if(best>gr.width*1.6)dst=null}
+ if(dst!=null&&tryTo(d.src,dst)){if(G&&LT)fly(gr,gn,tgtEl(),LT.f!=null)}else{render();why(d.src,f?'f':c?c.dataset.col:null)}}
 document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
 document.addEventListener('click',e=>{if(noClick){e.stopPropagation();e.preventDefault()}},true);
 $('#ud').onclick=()=>{if(!G.undo||!G.hist.length)return;const h=G.hist.pop();G.s=h.s;G.moves=h.moves;G.draws=h.draws;G.undo--;G.sel=null;render()};
