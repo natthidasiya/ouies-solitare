@@ -41,7 +41,7 @@ button:disabled{opacity:.35;cursor:default}
 .ex{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Fredoka','Mitr',sans-serif;font-size:calc(var(--cw)*.23);color:var(--txt);font-weight:700;gap:.12em}
 .back{background:radial-gradient(circle,#fff 2.2px,transparent 2.6px) 0 0/12px 12px,#9fcff5;border:3px solid #fff}
 .back img{position:absolute;width:56%;left:22%;top:28%;background:#fff;border-radius:50%;padding:6%}
-.ghost{position:fixed;z-index:99;pointer-events:none;transform:rotate(-4deg) scale(1.06);box-shadow:0 10px 20px rgba(90,120,160,.35)}
+.ghost{position:fixed;z-index:99;pointer-events:none;transform:rotate(-4deg) scale(1.06)}.ghost .card{box-shadow:0 10px 20px rgba(90,120,160,.35)}
 [data-drag]{touch-action:none;cursor:grab}
 .sel{transform:translateY(-6px);box-shadow:0 0 0 3px #ff7a9c,0 8px 14px rgba(255,122,156,.45)}
 .pile{width:var(--cw);height:var(--ch);position:relative;flex:none;cursor:pointer}
@@ -200,8 +200,9 @@ function render(){const s=G.s,cw=size(),ch=cw*1.4;
  const W=$('#waste');W.innerHTML='';if(s.waste.length){const e=cardEl(tp(s.waste),1);e.dataset.drag='w';if(G.sel&&G.sel.w)e.classList.add('sel');W.appendChild(e)}else W.innerHTML='<div class="empty"></div>';
  const T=$('#tab');T.innerHTML='';s.cols.forEach((c,i)=>{const col=document.createElement('div');col.className='col';col.dataset.col=i;col.onclick=()=>tapCol(i);
   let y=0;if(!c.length)col.innerHTML='<div class="empty"></div>';
+  let gg=c.length?1:0;while(c.length-1-gg>=s.down[i]&&C[c[c.length-1-gg]].v==C[tp(c)].v)gg++;
   c.forEach((id,k)=>{const face=k>=s.down[i];let g=0;if(k==c.length-1&&face){g=1;while(k-g>=s.down[i]&&C[c[k-g]].v==C[id].v)g++;if(g<2)g=0}const e=cardEl(id,face,g);e.style.top=y+'px';e.style.zIndex=k;
-   if(k==c.length-1)e.dataset.drag='c'+i;if(G.sel&&G.sel.c===i&&k==c.length-1)e.classList.add('sel');col.appendChild(e);y+=face?cw*.42:cw*.16});
+   if(face&&k>=c.length-gg)e.dataset.drag='c'+i+':'+(c.length-k);if(G.sel&&G.sel.c===i&&k==c.length-1)e.classList.add('sel');col.appendChild(e);y+=face?cw*.42:cw*.16});
   col.style.height=(c.length?y-(c.length&&s.down[i]<c.length?cw*.42:cw*.16)+ch:ch)+'px';T.appendChild(col)})}
 function snap(){G.hist.push({s:cl(G.s),moves:G.moves,draws:G.draws});if(G.hist.length>5)G.hist.shift()}
 function after(){G.sel=null;render();const s=G.s;
@@ -232,19 +233,25 @@ function tapCol(i){const s=G.s,c=s.cols[i];
  if(!c.length)return;const id=tp(c);
  if(canF(s,id))return act(()=>toF(s,popC(s,i)));G.sel={c:i};render()}
 
-const srcId=src=>src=='w'?tp(G.s.waste):tp(G.s.cols[+src.slice(1)]);
-const take=src=>src=='w'?G.s.waste.pop():popC(G.s,+src.slice(1));
-function tryTo(src,dst){const s=G.s,id=srcId(src);if(id==null)return false;
- if(dst=='f'){if(!canF(s,id))return false;act(()=>toF(s,take(src)));return true}
- const j=+dst;if(src=='c'+j||!fits(s,id,j))return false;
- if(src!='w'&&!s.cols[j].length&&s.cols[+src.slice(1)].length==1)return false;
- act(()=>s.cols[j].push(take(src)));return true}
+const pc=src=>{const [i,n]=src.slice(1).split(':').map(Number);return[i,n||1]};
+function srcList(src){if(src=='w')return G.s.waste.length?[tp(G.s.waste)]:[];const[i,n]=pc(src),c=G.s.cols[i];return c.slice(c.length-n)}
+function takeN(src){if(src=='w')return[G.s.waste.pop()];const[i,n]=pc(src),o=[];for(let k=0;k<n;k++)o.unshift(popC(G.s,i));return o}
+function tryTo(src,dst){const s=G.s,L=srcList(src);if(!L.length)return false;const ci=src=='w'?-1:pc(src)[0];
+ if(dst=='f'){const st=C[L[0]].s,f=s.f[st],hb=L.some(id=>C[id].t=='b');if(f.b==hb)return false;
+  if(f.n+L.filter(id=>C[id].t=='e').length>SETS[st].k)return false;
+  act(()=>takeN(src).sort((a,b)=>(C[b].t=='b')-(C[a].t=='b')).forEach(id=>toF(s,id)));return true}
+ const j=+dst;if(ci==j||!fits(s,L[0],j))return false;
+ if(ci>=0&&!s.cols[j].length&&s.cols[ci].length==L.length)return false;
+ act(()=>s.cols[j].push(...takeN(src)));return true}
 let D=null,noClick=false;
 document.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-drag]');if(!el||$('#md').classList.contains('on'))return;
- const r=el.getBoundingClientRect();D={el,src:el.dataset.drag,x0:e.clientX,y0:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,w:r.width,g:null}});
+ const r=el.getBoundingClientRect(),src=el.dataset.drag;let els=[el];
+ if(src!='w'){const[i,n]=pc(src);els=[...el.parentNode.querySelectorAll('[data-drag]')].filter(x=>pc(x.dataset.drag)[1]<=n).sort((a,b)=>pc(b.dataset.drag)[1]-pc(a.dataset.drag)[1])}
+ D={el,els,src,x0:e.clientX,y0:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,w:r.width,g:null}});
 document.addEventListener('pointermove',e=>{if(!D)return;
- if(!D.g){if(Math.hypot(e.clientX-D.x0,e.clientY-D.y0)<6)return;D.g=D.el.cloneNode(true);D.g.classList.add('ghost');D.g.classList.remove('sel');
-  D.g.style.width=D.w+'px';D.g.style.height=D.w*1.4+'px';document.body.appendChild(D.g);D.el.style.visibility='hidden'}
+ if(!D.g){if(Math.hypot(e.clientX-D.x0,e.clientY-D.y0)<6)return;const g=document.createElement('div');g.className='ghost';g.style.width=D.w+'px';
+  const t0=D.els[0].offsetTop;D.els.forEach(x=>{const cp=x.cloneNode(true);cp.classList.remove('sel');cp.style.top=(x.offsetTop-t0)+'px';g.appendChild(cp);x.style.visibility='hidden'});
+  g.style.height=(D.els[D.els.length-1].offsetTop-t0+D.w*1.4)+'px';document.body.appendChild(g);D.g=g}
  e.preventDefault();D.g.style.left=e.clientX-D.dx+'px';D.g.style.top=e.clientY-D.dy+'px'},{passive:false});
 function endDrag(e){if(!D)return;const d=D;D=null;if(!d.g)return;noClick=true;setTimeout(()=>noClick=false,50);d.g.remove();
  const t=document.elementFromPoint(e.clientX,e.clientY),f=t&&t.closest('[data-f],#fnd'),c=t&&t.closest('[data-col]');
