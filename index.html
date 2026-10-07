@@ -236,7 +236,7 @@ function cardEl(id,face,grp,strip){const d=document.createElement('div');
  const c=C[id];
  if(c.t=='b'){d.className='card base';d.style.backgroundImage=`url(${A.bases[c.img].src})`;const col=A.bases[c.img].red?'var(--red)':'var(--ink)';
   d.innerHTML=`<span class="num tl" style="color:${col}">${c.v}</span><span class="num br" style="color:${col}">${c.v}</span>`}
- else{d.className='card eq';d.innerHTML=`<img class="hd tl" src="${A.heads[c.h]}">${strip?`<div class="sl">${fx(c.x)}</div>`:`<div class="ex st">${fx2(c.x)}</div>`}${grp&&!strip?`<div class="res">${c.v}<small>${grp} ใบ</small></div>`:""}<img class="hd br" src="${A.heads[c.h]}">`}
+ else{d.className='card eq';d.innerHTML=`<img class="hd tl" src="${A.heads[c.h]}">${strip?`<div class="sl">${fx(c.x)}</div>`:grp?`<div class="ex sum">${c.v}<small>${grp} ใบ</small></div>`:`<div class="ex st">${fx2(c.x)}</div>`}<img class="hd br" src="${A.heads[c.h]}">`}
  return d}
 function size(){const n=Math.max(G.s.cols.length,CAP,4),gap=Math.min(8,Math.max(4,innerWidth/120));const cw=Math.min(132,Math.floor((Math.min(innerWidth,760)-24-gap*(n-1))/n));
  const r=document.documentElement.style;r.setProperty('--cw',cw+'px');r.setProperty('--ch',Math.round(cw*1.4)+'px');r.setProperty('--gap',gap+'px');return cw}
@@ -257,7 +257,7 @@ function render(){const s=G.s,cw=size(),ch=cw*1.4;
  const S=$('#stock');S.innerHTML='';if(s.stock.length)S.appendChild(cardEl(0,0));else S.innerHTML='<div class="empty">↻</div>';
  S.insertAdjacentHTML('beforeend',`<span class="cnt">${s.stock.length}</span>`);
  const W=$('#waste');W.innerHTML='';W.style.width=(cw*1.56)+'px';if(s.waste.length){const sh=s.waste.slice(-3);sh.forEach((id,k)=>{const e=cardEl(id,1);e.style.left=(k*cw*.28)+'px';e.style.zIndex=k;
-  if(k==sh.length-1){e.dataset.drag='w';if(G.sel&&G.sel.w)e.classList.add('sel');if(G.anim){e.classList.add('flipin');G.anim=0}}else e.classList.add('dim');W.appendChild(e)})}else W.innerHTML='<div class="empty" style="width:var(--cw)"></div>';
+  if(k==sh.length-1){e.dataset.drag='w';if(G.sel&&G.sel.w)e.classList.add('sel');if(G.anim){e.classList.add('flipin');e.addEventListener('animationend',()=>e.classList.remove('flipin'),{once:true});G.anim=0}}else e.classList.add('dim');W.appendChild(e)})}else W.innerHTML='<div class="empty" style="width:var(--cw)"></div>';
  const T=$('#tab');T.innerHTML='';s.cols.forEach((c,i)=>{const col=document.createElement('div');col.className='col';col.dataset.col=i;col.onclick=()=>tapCol(i);
   let y=0;if(!c.length)col.innerHTML='<div class="empty"></div>';
   let gg=c.length?1:0;while(c.length-1-gg>=s.down[i]&&C[c[c.length-1-gg]].v==C[tp(c)].v)gg++;
@@ -283,8 +283,8 @@ function why(src,dst){if(dst==null)return;const s=G.s,L=srcList(src);if(!L.lengt
  if(a.v!=b.v)return toast('ค่าไม่เท่ากัน ('+b.v+' ≠ '+a.v+')');}
 let LT=null;
 function tgtEl(){if(!LT)return null;if(LT.f!=null){const q=G.s.fo.indexOf(LT.f);return document.querySelectorAll('#fnd .slot')[q]}const col=document.querySelector(`[data-col="${LT.c}"]`);return col&&col.querySelector('.card:last-of-type')}
-function fly(r,node,to,toF){if(!to||!node)return;const t=to.getBoundingClientRect(),c=node.cloneNode(true);c.classList.add('flyc');c.classList.remove('sel','ghost');
- c.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:98;margin:0;transition:transform .3s cubic-bezier(.2,.8,.3,1),opacity .3s;transform:none`;
+function fly(r,node,to,toF){if(!to||!node)return;node.querySelectorAll&&node.querySelectorAll('.flipin').forEach(x=>x.classList.remove('flipin'));if(toF&&node.classList.contains('base')){toF=false;to=to.querySelector('.card')||to}const t=to.getBoundingClientRect(),c=node.cloneNode(true);c.classList.add('flyc');c.classList.remove('sel','ghost','flipin');
+ c.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:98;margin:0;transition:transform .3s cubic-bezier(.2,.8,.3,1),opacity .3s;transform:none`;c.style.backgroundImage=node.style.backgroundImage;
  document.body.appendChild(c);const hide=!toF?to:null;if(hide)hide.style.visibility='hidden';
  requestAnimationFrame(()=>requestAnimationFrame(()=>{c.style.transform=`translate(${t.left-r.left}px,${t.top-r.top}px) scale(${t.width/r.width})`;if(toF)c.style.opacity='.0'}));
  setTimeout(()=>{c.remove();if(hide)hide.style.visibility=''},330)}
@@ -324,7 +324,7 @@ document.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-dra
  D={el,els,src,x0:e.clientX,y0:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,w:r.width,g:null}});
 document.addEventListener('pointermove',e=>{if(!D)return;
  if(!D.g){if(Math.hypot(e.clientX-D.x0,e.clientY-D.y0)<6)return;const g=document.createElement('div');g.className='ghost';g.style.width=D.w+'px';
-  const t0=D.els[0].offsetTop;D.els.forEach(x=>{const cp=x.cloneNode(true);cp.classList.remove('sel');cp.style.top=(x.offsetTop-t0)+'px';g.appendChild(cp);x.style.visibility='hidden'});
+  const t0=D.els[0].offsetTop;D.els.forEach(x=>{const cp=x.cloneNode(true);cp.classList.remove('sel','flipin');cp.style.top=(x.offsetTop-t0)+'px';g.appendChild(cp);x.style.visibility='hidden'});
   g.style.height=(D.els[D.els.length-1].offsetTop-t0+D.w*1.4)+'px';document.body.appendChild(g);D.g=g}
  e.preventDefault();D.g.style.left=e.clientX-D.dx+'px';D.g.style.top=e.clientY-D.dy+'px'},{passive:false});
 function endDrag(e){if(!D)return;const d=D;D=null;if(!d.g)return;noClick=true;setTimeout(()=>noClick=false,50);const gn=d.g.firstChild,gr=gn.getBoundingClientRect();d.g.remove();LT=null;
