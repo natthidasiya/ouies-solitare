@@ -28,15 +28,16 @@ button:disabled{opacity:.35;cursor:default}
 .mid{margin-bottom:26px;align-items:center}
 .card{width:var(--cw);height:var(--ch);border-radius:calc(var(--cw)*.1);position:absolute;left:0;background:var(--cream);box-shadow:0 3px 8px rgba(120,160,200,.28);overflow:hidden;transition:transform .12s}
 .card.base{background-size:cover;background-position:center}
-.num{position:absolute;font-family:'Fredoka','Mitr',sans-serif;font-weight:700;font-size:calc(var(--cw)*.27);line-height:1;padding:0 2px;background:rgba(255,250,242,.88);border-radius:6px}
+.num{position:absolute;font-family:'Fredoka','Mitr',sans-serif;font-weight:700;font-size:calc(var(--cw)*.33);line-height:1;padding:0 2px;background:rgba(255,250,242,.88);border-radius:6px}
 .num.tl{left:7%;top:4%}.num.br{right:7%;bottom:4%;transform:rotate(180deg)}
 .eq{border:0}
 .eq::after{content:"";position:absolute;inset:5%;border:2px solid #ffc6d3;border-radius:calc(var(--cw)*.07);pointer-events:none}
-.hd{position:absolute;width:27%}.hd.tl{left:6%;top:5%}.hd.br{right:6%;bottom:5%;transform:rotate(180deg)}
+.hd{position:absolute;width:23%}.hd.tl{left:6%;top:5%}.hd.br{right:6%;bottom:5%;transform:rotate(180deg)}
 .op{width:.62em;height:.62em;flex:none}
 .ex.sum{flex-direction:column;gap:0;font-size:calc(var(--cw)*.4);color:#3a78b5}
 .ex.sum small{font-size:.3em;color:var(--mut);font-weight:600}
-.mini{position:absolute;right:9%;top:9%;font-family:'Fredoka','Mitr',sans-serif;font-weight:700;display:flex;align-items:center;gap:1px;font-size:calc(var(--cw)*.13);color:var(--ink)}
+.ex.st{flex-direction:column;gap:0;font-size:calc(var(--cw)*.3);line-height:.98}.ex.st .r2{display:flex;align-items:center;gap:.05em}.ex.st .op{width:.62em;height:.62em;margin:.02em 0}
+.mini{position:absolute;right:9%;top:9%;font-family:'Fredoka','Mitr',sans-serif;font-weight:700;display:flex;align-items:center;gap:1px;font-size:calc(var(--cw)*.17);color:var(--ink)}
 .ex{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Fredoka','Mitr',sans-serif;font-size:calc(var(--cw)*.23);color:var(--txt);font-weight:700;gap:.12em}
 .back{background:radial-gradient(circle,#fff 2.2px,transparent 2.6px) 0 0/12px 12px,#9fcff5;border:3px solid #fff}
 .back img{position:absolute;width:56%;left:22%;top:28%;background:#fff;border-radius:50%;padding:6%}
@@ -175,12 +176,13 @@ function persist(){if(G)LS.set('neko:save:'+ID,{level:P.level,seed:G.seed,s:G.s,
 // ---- UI
 const OPS={'+':'<path d="M12 4v16M4 12h16"/>','−':'<path d="M4 12h16"/>','×':'<path d="M6 6l12 12M18 6L6 18"/>','÷':'<path d="M4 12h16"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>'};
 const fx=x=>x.replace(/[+−×÷]/,o=>`<svg class="op" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round">${OPS[o]}</svg>`);
+const fx2=x=>{const m=x.match(/^(\d+)([+−×÷])(\d+)$/);return `<span>${m[1]}</span><span class="r2">${fx(m[2])}</span><span>${m[3]}</span>`};
 function cardEl(id,face,grp){const d=document.createElement('div');
  if(!face){d.className='card back';d.innerHTML=`<img src="${A.heads[0]}">`;return d}
  const c=C[id];
  if(c.t=='b'){d.className='card base';d.style.backgroundImage=`url(${A.bases[c.img].src})`;const col=A.bases[c.img].red?'var(--red)':'var(--ink)';
   d.innerHTML=`<span class="num tl" style="color:${col}">${c.v}</span><span class="num br" style="color:${col}">${c.v}</span>`}
- else{d.className='card eq';d.innerHTML=`<img class="hd tl" src="${A.heads[c.h]}"><span class="mini">${fx(c.x)}</span>${grp?`<div class="ex sum">${c.v}<small>${grp} ใบ</small></div>`:`<div class="ex">${fx(c.x)}</div>`}<img class="hd br" src="${A.heads[c.h]}">`}
+ else{d.className='card eq';d.innerHTML=`<img class="hd tl" src="${A.heads[c.h]}">${grp?`<div class="ex sum">${c.v}<small>${grp} ใบ</small></div>`:`<div class="ex st">${fx2(c.x)}</div>`}<img class="hd br" src="${A.heads[c.h]}">`}
  return d}
 function size(){const n=G.s.cols.length,gap=Math.min(8,Math.max(4,innerWidth/120));const cw=Math.min(96,Math.floor((Math.min(innerWidth,760)-24-gap*(n-1))/n));
  const r=document.documentElement.style;r.setProperty('--cw',cw+'px');r.setProperty('--ch',Math.round(cw*1.4)+'px');r.setProperty('--gap',gap+'px');return cw}
