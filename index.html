@@ -141,7 +141,7 @@ function rngF(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
 function hs(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
 const ri=(r,a,b)=>a+Math.floor(r()*(b-a+1));
 function shuf(r,a){for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-const lvT=l=>l<=3?0:(l%5==0?2:(l%2==0?1:0)),isHard=l=>lvT(l)>0,isSH=l=>lvT(l)==2;
+const lvT=l=>[0,0,0,1,0,0,2][(l-1)%7],isHard=l=>lvT(l)>0,isSH=l=>lvT(l)==2;
 let C,SETS,CAP=9,DN=1;
 function opsFor(T){const o=[];if(T>=2)o.push(0);if(T<=98)o.push(1);for(let d=2;d<=9;d++)if(T%d==0&&T/d>=2&&T/d<=9){o.push(2);break}if(T<=49)o.push(3);return o}
 function eqFor(r,T,u,fo){for(let k=0;k<80;k++){const op=k<60?fo:ri(r,0,3);let s;
@@ -229,8 +229,8 @@ function start(){LS.set('neko:save:'+ID,null);const hard=isHard(P.level);let k=P
  P.used.push(seed);saveP();
  const sh=isSH(P.level),ml=sh?Math.ceil(res.m*1.1)+3:Math.ceil(res.m*1.5)+10,dl=sh?Math.ceil(res.d*1.15)+2:Math.max(Math.ceil(res.gd*1.3),Math.ceil(res.d*2.2))+6;
  G={s:st,moves:0,draws:0,undo:2,hist:[],ml,dl,sel:null,hard,sh,seed};show('app');render();if(hard)hardPop()}
-function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=11||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
-function persist(){if(G)LS.set('neko:save:'+ID,{ver:11,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
+function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=13||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
+function persist(){if(G)LS.set('neko:save:'+ID,{ver:13,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
 // ---- UI
 const OPS={'+':'<path d="M12 4v16M4 12h16"/>','−':'<path d="M4 12h16"/>','×':'<path d="M6 6l12 12M18 6L6 18"/>','÷':'<path d="M4 12h16"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>'};
 const fx=x=>x.replace(/[+−×÷]/,o=>`<svg class="op" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round">${OPS[o]}</svg>`);
@@ -300,21 +300,20 @@ function fly(r,node,to,toF){if(!to||!node)return;node.querySelectorAll&&node.que
 function flyFrom(el,fnF){const r=el&&el.getBoundingClientRect(),n=el&&el.cloneNode(true);fnF();if(r)fly(r,n,tgtEl(),LT&&LT.f!=null)}
 function confetti(){const cs=['#ff8fab','#7fbcef','#ffd36e','#b8e6c9','#ffc6d3'];for(let i=0;i<60;i++){const e=document.createElement('i');e.className='cf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDuration=1.6+Math.random()*1.6+'s';e.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(id){['welcome','home'].forEach(x=>$('#'+x).classList.toggle('on',x==id));$('#app').style.display=id=='app'?'block':'none'}
-function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==11)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
- if(v&&v.ver==11&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
+function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==13)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
+ if(v&&v.ver==13&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
 
 function act(f){snap();f();G.moves++;after()}
 $('#stock').onclick=()=>{const s=G.s;if(!s.stock.length){if(s.waste.length){snap();s.stock=s.waste.reverse();s.waste=[];G.sel=null;render()}return}
  if(G.draws>=G.dl)return;snap();for(let i=0;i<DN&&s.stock.length;i++)s.waste.push(s.stock.pop());G.draws++;G.anim=1;after()};
-$('#waste').onclick=()=>{const s=G.s;if(!s.waste.length)return;const id=tp(s.waste);
- if(canF(s,id)){LT={f:C[id].s};return flyFrom($('#waste [data-drag]'),()=>act(()=>toF(s,s.waste.pop())))}G.sel=G.sel&&G.sel.w?null:{w:1};render()};
+$('#waste').onclick=()=>{const s=G.s;if(!s.waste.length)return;G.sel=G.sel&&G.sel.w?null:{w:1};render()};
 function tapCol(i){const s=G.s,c=s.cols[i];
  if(G.sel){const sel=G.sel;if(sel.c===i){G.sel=null;return render()}
   const id=sel.w?tp(s.waste):tp(s.cols[sel.c]);
   if((sel.w?wfit(s,id,i):fits(s,id,i))&&!(sel.c!=null&&!c.length&&s.cols[sel.c].length==1)){LT={c:i};const se=sel.w?$('#waste [data-drag]'):document.querySelector(`[data-col="${sel.c}"] .card:last-of-type`);return flyFrom(se,()=>act(()=>s.cols[i].push(sel.w?s.waste.pop():popC(s,sel.c))))}
   if(!c.length){G.sel=null;return render()}}
  if(!c.length)return;const id=tp(c);
- if(canF(s,id)){LT={f:C[id].s};const col=document.querySelector(`[data-col="${i}"]`);return flyFrom(col&&col.querySelector('.card:last-of-type'),()=>act(()=>toF(s,popC(s,i))))}G.sel={c:i};render()}
+ G.sel={c:i};render()}
 
 const pc=src=>{const [i,n]=src.slice(1).split(':').map(Number);return[i,n||1]};
 function srcList(src){if(src=='w')return G.s.waste.length?[tp(G.s.waste)]:[];const[i,n]=pc(src),c=G.s.cols[i];return c.slice(c.length-n)}
