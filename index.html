@@ -109,6 +109,8 @@ body.hardmode #app{background:linear-gradient(180deg,rgba(255,106,61,.10),transp
 .box.hard{border-color:#ff7a5a}.box.hard h2{color:#ff4d3d!important;font-family:'Fredoka',sans-serif}.box.hard .ic{border-color:#ff9a6a;width:120px;animation:hb 1.2s ease-in-out infinite}
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:#5b4a6b;color:#fff;padding:9px 16px;border-radius:99px;font-size:14px;z-index:60;transition:.25s;display:flex;align-items:center;gap:4px;white-space:nowrap;pointer-events:none}
 #toast.on{opacity:1;transform:translate(-50%,0)}#toast .op{width:14px;height:14px}
+.box p,.box h2,#hban span,.panel p,.how li,#toast{word-break:keep-all;line-break:strict}
+.flyc{pointer-events:none}
 </style></head><body>
 <section class="scr" id="welcome"><div class="panel"><img class="ic" id="wi"><div class="logo">Ouies<br><span>Solitaire</span></div><p>ยินดีต้อนรับ! ตั้งชื่อนักเล่นของเธอก่อนนะ</p><input id="nm" maxlength="20" placeholder="ชื่อของเธอ"><button class="big" id="go">ไปกันเลย</button><div id="pls"></div></div></section>
 <section class="scr" id="home"><div class="panel"><img class="ic" id="hi"><div class="logo">Ouies <span>Solitaire</span></div><p id="hello"></p><div class="hardban" id="hban"><img id="hfi"><div><b>HARD LEVEL</b><span id="hbt"></span></div></div>
@@ -138,28 +140,29 @@ function eqFor(r,T,u,fo){for(let k=0;k<80;k++){const op=k<60?fo:ri(r,0,3);let s;
  else{const mx=Math.min(9,Math.floor(99/T));if(mx<2)continue;const b=ri(r,2,mx);s=T*b+'÷'+b}
  if(!u.has(s)){u.add(s);return s}}const a=ri(r,1,T-1);return a+'+'+(T-a)}
 function deal(level,seed){
- const r=rngF(seed),hard=isHard(level),nS=hard?ri(r,5,6):ri(r,4,5),nC=hard?7:6;
+ const r=rngF(seed),hard=isHard(level),nS=hard?7:6,nC=hard?7:6;
  const tg=new Set();while(tg.size<nS)tg.add(r()<.4?ri(r,4,9):ri(r,10,60));
  const imgs=shuf(r,[...A.bases.keys()]);C=[];SETS=[];
- [...tg].forEach((t,s)=>{const k=hard?ri(r,5,8):ri(r,4,7);SETS.push({t,k,img:imgs[s]});
+ [...tg].forEach((t,s)=>{const k=hard?ri(r,4,6):ri(r,3,5);SETS.push({t,k,img:imgs[s]});
   C.push({t:'b',v:t,s,img:imgs[s]});const u=new Set();
   const av=shuf(r,opsFor(t));for(let i=0;i<k;i++){const x=eqFor(r,t,u,av[i%av.length]);C.push({t:'e',v:t,s,x,o:x.match(/[+−×÷]/)[0],h:ri(r,0,A.heads.length-1)})}});
  C.forEach((c,i)=>c.id=i);
  const ord=shuf(r,C.map(c=>c.id));
- const tabN=Math.min(Math.round(C.length*(hard?.62:.55)),nC*8);
+ const tabN=Math.min(Math.round(C.length*(hard?.55:.5)),nC*8);
  const L=Array.from({length:nC},()=>ri(r,hard?3:2,8));
  let sum=L.reduce((a,b)=>a+b);
  while(sum>tabN){const i=ri(r,0,nC-1);if(L[i]>1){L[i]--;sum--}}
  while(sum<tabN){const i=ri(r,0,nC-1);if(L[i]<8){L[i]++;sum++}}
  let p=0;const cols=L.map(n=>{const c=ord.slice(p,p+n);p+=n;return c});const stock=ord.slice(p);
  const isB=id=>C[id].t=='b';
- const swapOut=(a,k)=>{const j=stock.findIndex(x=>!isB(x));if(j>=0)[a[k],stock[j]]=[stock[j],a[k]]};
- let fu=0;cols.forEach(c=>{const k=c.length-1;if(isB(c[k])){if(hard||fu)swapOut(c,k);else fu=1}});
+ let fu=0;const seen=new Set();cols.forEach(c=>{const k=c.length-1;let tr=0;
+  while((seen.has(C[c[k]].v)||(isB(c[k])&&(hard||fu)))&&tr++<80){const j=ri(r,0,stock.length-1);if(isB(stock[j])||seen.has(C[stock[j]].v))continue;[c[k],stock[j]]=[stock[j],c[k]]}
+  if(isB(c[k]))fu=1;seen.add(C[c[k]].v)});
  if(isB(tp(stock))){const j=stock.findIndex(x=>!isB(x));if(j>=0){const k=stock.length-1;[stock[k],stock[j]]=[stock[j],stock[k]]}}
- return{cols,down:cols.map(c=>c.length-1),stock,waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0}))}}
-const cl=s=>({cols:s.cols.map(c=>c.slice()),down:s.down.slice(),stock:s.stock.slice(),waste:s.waste.slice(),f:s.f.map(x=>({b:x.b,n:x.n,lo:x.lo,g:x.g}))});
+ return{cols,down:cols.map(c=>c.length-1),stock,waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0})),fo:[]}}
+const cl=s=>({cols:s.cols.map(c=>c.slice()),down:s.down.slice(),stock:s.stock.slice(),waste:s.waste.slice(),f:s.f.map(x=>({b:x.b,n:x.n,lo:x.lo,g:x.g})),fo:(s.fo||[]).slice()});
 const canF=(s,id)=>{const c=C[id],f=s.f[c.s];return c.t=='b'?!f.b:(f.b&&f.n<SETS[c.s].k)};
-const toF=(s,id)=>{const c=C[id];const f=s.f[c.s];if(c.t=='b'){f.b=true;f.lo=null}else{f.n++;f.lo=c.o}};
+const toF=(s,id)=>{const c=C[id];const f=s.f[c.s];if(c.t=='b'){f.b=true;f.lo=null;if(s.fo&&!s.fo.includes(c.s))s.fo.push(c.s)}else{f.n++;f.lo=c.o}};
 function popC(s,i){const id=s.cols[i].pop(),L=s.cols[i].length;if(L&&s.down[i]>=L)s.down[i]=L-1;if(!L)s.down[i]=0;return id}
 const tp=a=>a[a.length-1];
 const won=s=>s.f.every((x,i)=>x.b&&x.n==SETS[i].k);
@@ -193,8 +196,8 @@ function start(){LS.set('neko:save:'+ID,null);const hard=isHard(P.level);let k=P
  P.used.push(seed);saveP();
  const ml=Math.ceil(res.m*(hard?1.12:1.3))+(hard?2:4),dl=Math.ceil(res.d*(hard?1.15:1.4))+(hard?3:6);
  G={s:st,moves:0,draws:0,undo:2,hist:[],ml,dl,sel:null,hard,seed};show('app');render();if(hard)hardPop()}
-function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=4||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
-function persist(){if(G)LS.set('neko:save:'+ID,{ver:4,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl})}
+function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=5||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
+function persist(){if(G)LS.set('neko:save:'+ID,{ver:5,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl})}
 // ---- UI
 const OPS={'+':'<path d="M12 4v16M4 12h16"/>','−':'<path d="M4 12h16"/>','×':'<path d="M6 6l12 12M18 6L6 18"/>','÷':'<path d="M4 12h16"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>'};
 const fx=x=>x.replace(/[+−×÷]/,o=>`<svg class="op" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round">${OPS[o]}</svg>`);
@@ -214,13 +217,13 @@ function render(){const s=G.s,cw=size(),ch=cw*1.4;
  $('#dr').innerHTML=`จั่ว <b>${G.draws}/${G.dl}</b>`;$('#dr').className='stat'+(G.dl-G.draws<=2?' warn':'');
  const ud=$('#ud');ud.textContent='ย้อน ('+G.undo+')';ud.disabled=!G.undo||!G.hist.length;
  $('#idc').textContent='👤 '+ID;persist();
- const F=$('#fnd');F.innerHTML='';SETS.forEach((st,i)=>{const sl=document.createElement('div');sl.className='slot';sl.dataset.f=1;const f=s.f[i];
+ const F=$('#fnd');F.innerHTML='';SETS.forEach((_,q)=>{const sl=document.createElement('div');sl.className='slot';sl.dataset.f=1;const i=s.fo[q];if(i==null){F.appendChild(sl);return}sl.dataset.set=i;const st=SETS[i],f=s.f[i];
   if(f.b&&f.n==st.k&&f.g){sl.classList.add('gone');sl.innerHTML='<span class="ok">✓</span>'}
   else if(f.b){const e=cardEl(C.find(c=>c.t=='b'&&c.s==i).id,1);sl.appendChild(e);
    if(f.n==st.k){sl.classList.add('bye');setTimeout(()=>{if(G&&!f.g){f.g=1;render()}},950)}
    
    sl.insertAdjacentHTML('beforeend',`<span class="badge">${f.n}/${st.k}</span>`)}
-  else sl.insertAdjacentHTML('beforeend',`<span class="badge">0/${st.k}</span>`);F.appendChild(sl)});
+  F.appendChild(sl)});
  const S=$('#stock');S.innerHTML='';if(s.stock.length)S.appendChild(cardEl(0,0));else S.innerHTML='<div class="empty">↻</div>';
  S.insertAdjacentHTML('beforeend',`<span class="cnt">${s.stock.length}</span>`);
  const W=$('#waste');W.innerHTML='';W.style.width=(cw*1.56)+'px';if(s.waste.length){const sh=s.waste.slice(-3);sh.forEach((id,k)=>{const e=cardEl(id,1);e.style.left=(k*cw*.28)+'px';e.style.zIndex=k;
@@ -233,7 +236,7 @@ function render(){const s=G.s,cw=size(),ch=cw*1.4;
   col.style.height=(c.length?y-(c.length&&s.down[i]<c.length?cw*.42:cw*.16)+ch:ch)+'px';T.appendChild(col)})}
 function snap(){G.hist.push({s:cl(G.s),moves:G.moves,draws:G.draws});if(G.hist.length>5)G.hist.shift()}
 function after(){G.sel=null;render();const s=G.s;
- const mv=G.moves,dw=G.draws;if(won(s)){P.level++;saveP();LS.set('neko:save:'+ID,null);G=null;confetti();return modal(0,'เก่งมาก '+ID+'!',`ผ่านด่าน ${P.level-1} แล้ว 🎉 ใช้ไป ${mv} ตา · จั่ว ${dw} ครั้ง`,'ด่านต่อไป',start,'Home',goHome)}
+ const mv=G.moves,dw=G.draws;if(won(s)){P.level++;saveP();LS.set('neko:save:'+ID,null);G=null;confetti();return modal(0,'เก่งมาก '+ID+'!',`ผ่านด่าน ${P.level-1} แล้ว 🎉`,'ด่านต่อไป',start,'Home',goHome)}
  if(G.moves>=G.ml)return over('เดินครบลิมิตแล้ว');
  const canAny=s.cols.some(c=>c.length&&canF(s,tp(c)))||(s.waste.length&&canF(s,tp(s.waste)))||gen(s).some(x=>x.t!='d'&&x.p<3);
  const canDraw=(s.stock.length&&G.draws<G.dl)||(!s.stock.length&&s.waste.length&&G.draws<G.dl);
@@ -242,29 +245,37 @@ function over(m){document.querySelectorAll('.cf').forEach(x=>x.remove());LS.set(
 function modal(sad,t,p,b,fn,b2,fn2){$('#mbox').className='box'+(sad?' sad':'');$('#mi').src=A.heads[sad?0:1];$('#mt').textContent=t;$('#mp').textContent=p;
  $('#mbox').querySelectorAll('.tear').forEach(x=>x.remove());if(sad)[[-14,0],[14,.7]].forEach(([x,d])=>{const e=document.createElement('i');e.className='tear';e.style.cssText=`left:calc(50% + ${x}px);top:-6px;animation-delay:${d}s`;$('#mbox').appendChild(e)});
  $('#mb').textContent=b;$('#m2').textContent=b2;$('#md').classList.add('on');$('#mb').onclick=()=>{$('#md').classList.remove('on');fn()};$('#m2').onclick=()=>{$('#md').classList.remove('on');fn2()}}
-function hardPop(){modal(0,'HARD LEVEL!',`ด่าน ${P.level} โหมดไฟลุก 🔥 ไพ่ฐานซ่อนหมด ลิมิตตาเดินตึงขึ้น คิดก่อนวางนะ`,'ลุยเลย 🔥',()=>{},'Home',goHome);$('#mbox').className='box hard';$('#mi').src=A.fire}
+function hardPop(){modal(0,'HARD LEVEL!',`ด่าน ${P.level} โหมดไฟลุก 🔥 ไพ่ฐานซ่อนหมด ตาเดินจำกัดกว่าเดิม คิดก่อนวางนะ`,'ลุยเลย 🔥',()=>{},'Home',goHome);$('#mbox').className='box hard';$('#mi').src=A.fire}
 function toast(m){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';document.body.appendChild(e)}e.innerHTML=m;e.className='on';clearTimeout(e._t);e._t=setTimeout(()=>e.className='',2200)}
 function why(src,dst){if(dst==null)return;const s=G.s,L=srcList(src);if(!L.length)return;const b=C[L[0]];
  if(dst=='f'){const top=C[L[L.length-1]],f=s.f[top.s];if(top.t=='e'&&!f.b)return toast('ต้องวางไพ่ฐาน <b>'+top.v+'</b> ก่อน');return}
  const c=s.cols[+dst];if(!c.length){if(src=='w')toast('ไพ่จากกองจั่ววางลงแถวว่างไม่ได้ ต้องต่อกับเลขเดียวกัน');return}const a=C[tp(c)];
  if(a.v!=b.v)return toast('ค่าไม่เท่ากัน ('+b.v+' ≠ '+a.v+')');}
+let LT=null;
+function tgtEl(){if(!LT)return null;if(LT.f!=null){const q=G.s.fo.indexOf(LT.f);return document.querySelectorAll('#fnd .slot')[q]}const col=document.querySelector(`[data-col="${LT.c}"]`);return col&&col.querySelector('.card:last-of-type')}
+function fly(r,node,to,toF){if(!to||!node)return;const t=to.getBoundingClientRect(),c=node.cloneNode(true);c.classList.add('flyc');c.classList.remove('sel','ghost');
+ c.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:98;margin:0;transition:transform .3s cubic-bezier(.2,.8,.3,1),opacity .3s;transform:none`;
+ document.body.appendChild(c);const hide=!toF?to:null;if(hide)hide.style.visibility='hidden';
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{c.style.transform=`translate(${t.left-r.left}px,${t.top-r.top}px) scale(${t.width/r.width})`;if(toF)c.style.opacity='.0'}));
+ setTimeout(()=>{c.remove();if(hide)hide.style.visibility=''},330)}
+function flyFrom(el,fnF){const r=el&&el.getBoundingClientRect(),n=el&&el.cloneNode(true);fnF();if(r)fly(r,n,tgtEl(),LT&&LT.f!=null)}
 function confetti(){const cs=['#ff8fab','#7fbcef','#ffd36e','#b8e6c9','#ffc6d3'];for(let i=0;i<60;i++){const e=document.createElement('i');e.className='cf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDuration=1.6+Math.random()*1.6+'s';e.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(id){['welcome','home'].forEach(x=>$('#'+x).classList.toggle('on',x==id));$('#app').style.display=id=='app'?'block':'none'}
-function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==4)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';$('#hbt').textContent='ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
- if(v&&v.ver==4&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
+function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==5)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';$('#hbt').textContent='ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
+ if(v&&v.ver==5&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
 
 function act(f){snap();f();G.moves++;after()}
 $('#stock').onclick=()=>{const s=G.s;if(!s.stock.length){if(s.waste.length){snap();s.stock=s.waste.reverse();s.waste=[];G.sel=null;render()}return}
  if(G.draws>=G.dl)return;snap();s.waste.push(s.stock.pop());G.draws++;G.anim=1;after()};
 $('#waste').onclick=()=>{const s=G.s;if(!s.waste.length)return;const id=tp(s.waste);
- if(canF(s,id))return act(()=>toF(s,s.waste.pop()));G.sel=G.sel&&G.sel.w?null:{w:1};render()};
+ if(canF(s,id)){LT={f:C[id].s};return flyFrom($('#waste [data-drag]'),()=>act(()=>toF(s,s.waste.pop())))}G.sel=G.sel&&G.sel.w?null:{w:1};render()};
 function tapCol(i){const s=G.s,c=s.cols[i];
  if(G.sel){const sel=G.sel;if(sel.c===i){G.sel=null;return render()}
   const id=sel.w?tp(s.waste):tp(s.cols[sel.c]);
-  if(fits(s,id,i)&&!(sel.w&&!c.length)&&!(sel.c!=null&&!c.length&&s.cols[sel.c].length==1)){return act(()=>s.cols[i].push(sel.w?s.waste.pop():popC(s,sel.c)))}
+  if(fits(s,id,i)&&!(sel.w&&!c.length)&&!(sel.c!=null&&!c.length&&s.cols[sel.c].length==1)){LT={c:i};const se=sel.w?$('#waste [data-drag]'):document.querySelector(`[data-col="${sel.c}"] .card:last-of-type`);return flyFrom(se,()=>act(()=>s.cols[i].push(sel.w?s.waste.pop():popC(s,sel.c))))}
   if(!c.length){G.sel=null;return render()}}
  if(!c.length)return;const id=tp(c);
- if(canF(s,id))return act(()=>toF(s,popC(s,i)));G.sel={c:i};render()}
+ if(canF(s,id)){LT={f:C[id].s};const col=document.querySelector(`[data-col="${i}"]`);return flyFrom(col&&col.querySelector('.card:last-of-type'),()=>act(()=>toF(s,popC(s,i))))}G.sel={c:i};render()}
 
 const pc=src=>{const [i,n]=src.slice(1).split(':').map(Number);return[i,n||1]};
 function srcList(src){if(src=='w')return G.s.waste.length?[tp(G.s.waste)]:[];const[i,n]=pc(src),c=G.s.cols[i];return c.slice(c.length-n)}
@@ -272,10 +283,10 @@ function takeN(src){if(src=='w')return[G.s.waste.pop()];const[i,n]=pc(src),o=[];
 function tryTo(src,dst){const s=G.s,L=srcList(src);if(!L.length)return false;const ci=src=='w'?-1:pc(src)[0];
  if(dst=='f'){const ord=L.slice().reverse().sort((a,b)=>(C[b].t=='b')-(C[a].t=='b')),x=cl(s);
   for(const id of ord){if(!canF(x,id))return false;toF(x,id)}
-  act(()=>{takeN(src);ord.forEach(id=>toF(s,id))});return true}
+  LT={f:C[ord[0]].s};act(()=>{takeN(src);ord.forEach(id=>toF(s,id))});return true}
  const j=+dst;if(ci==j||!fits(s,L[0],j))return false;if(src=='w'&&!s.cols[j].length)return false;
  if(ci>=0&&!s.cols[j].length&&s.cols[ci].length==L.length)return false;
- act(()=>s.cols[j].push(...takeN(src)));return true}
+ LT={c:j};act(()=>s.cols[j].push(...takeN(src)));return true}
 let D=null,noClick=false;
 document.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-drag]');if(!el||$('#md').classList.contains('on'))return;
  const r=el.getBoundingClientRect(),src=el.dataset.drag;let els=[el];
@@ -286,9 +297,9 @@ document.addEventListener('pointermove',e=>{if(!D)return;
   const t0=D.els[0].offsetTop;D.els.forEach(x=>{const cp=x.cloneNode(true);cp.classList.remove('sel');cp.style.top=(x.offsetTop-t0)+'px';g.appendChild(cp);x.style.visibility='hidden'});
   g.style.height=(D.els[D.els.length-1].offsetTop-t0+D.w*1.4)+'px';document.body.appendChild(g);D.g=g}
  e.preventDefault();D.g.style.left=e.clientX-D.dx+'px';D.g.style.top=e.clientY-D.dy+'px'},{passive:false});
-function endDrag(e){if(!D)return;const d=D;D=null;if(!d.g)return;noClick=true;setTimeout(()=>noClick=false,50);d.g.remove();
+function endDrag(e){if(!D)return;const d=D;D=null;if(!d.g)return;noClick=true;setTimeout(()=>noClick=false,50);const gn=d.g.firstChild,gr=gn.getBoundingClientRect();d.g.remove();LT=null;
  const t=document.elementFromPoint(e.clientX,e.clientY),f=t&&t.closest('[data-f],#fnd'),c=t&&t.closest('[data-col]');
- G.sel=null;if(!((f&&tryTo(d.src,'f'))||(c&&tryTo(d.src,c.dataset.col)))){render();why(d.src,f?'f':c?c.dataset.col:null)}}
+ G.sel=null;if((f&&tryTo(d.src,'f'))||(c&&tryTo(d.src,c.dataset.col))){if(G&&LT)fly(gr,gn,tgtEl(),LT.f!=null)}else{render();why(d.src,f?'f':c?c.dataset.col:null)}}
 document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
 document.addEventListener('click',e=>{if(noClick){e.stopPropagation();e.preventDefault()}},true);
 $('#ud').onclick=()=>{if(!G.undo||!G.hist.length)return;const h=G.hist.pop();G.s=h.s;G.moves=h.moves;G.draws=h.draws;G.undo--;G.sel=null;render()};
