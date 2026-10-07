@@ -1,6 +1,7 @@
 <!doctype html><html lang="th"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ouies Solitaire</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#bfe0fa"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Ouies">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Mitr:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#fff1f4;--bg2:#ffe3ec;--cream:#fffaf2;--gold:#f0b54a;--wine:#ff8fab;--ink:#5a3a3a;--red:#e8455e;--mut:#8fa3bd;--txt:#5b4a6b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -261,4 +262,5 @@ function welcome(){$('#nm').value='';const L=LS.get('neko:players')||[],w=$('#pl
 $('#cn').onclick=welcome;
 $('#hb').onclick=()=>{persist();goHome()};
 if(ID){loadP();goHome()}else welcome();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
