@@ -122,6 +122,10 @@ body.hardmode #app{background:linear-gradient(180deg,rgba(255,106,61,.10),transp
 .tag.hard.sh,#hban.sh{background:linear-gradient(135deg,#7b2ff7,#ff2d55)!important;box-shadow:0 3px 0 #5a1db8!important}
 .box.hard.sh{border-color:#a55cff}.box.hard.sh h2{background:linear-gradient(90deg,#7b2ff7,#ff2d55);-webkit-background-clip:text;background-clip:text;color:transparent!important}
 body.shmode #app{background:linear-gradient(180deg,rgba(123,47,247,.12),transparent 180px)}
+.ic{border:0!important;border-radius:0!important;padding:10px 6px 4px!important;background:radial-gradient(circle at 50% 58%,#fff 0 56%,#ffc6d3 57% 61%,transparent 62%)!important;overflow:visible}
+.box.sad .ic{background:radial-gradient(circle at 50% 58%,#fff 0 56%,#bcdcf7 57% 61%,transparent 62%)!important}
+.box.hard .ic{background:radial-gradient(circle at 50% 58%,#fff 0 56%,#ff9a6a 57% 61%,transparent 62%)!important}
+.box{overflow:visible!important}
 </style></head><body>
 <section class="scr" id="welcome"><div class="panel"><img class="ic" id="wi"><div class="logo">Ouies<br><span>Solitaire</span></div><p>ยินดีต้อนรับ! ตั้งชื่อนักเล่นของเธอก่อนนะ</p><input id="nm" maxlength="20" placeholder="ชื่อของเธอ"><button class="big" id="go">ไปกันเลย</button><div id="pls"></div></div></section>
 <section class="scr" id="home"><div class="panel"><img class="ic" id="hi"><div class="logo">Ouies <span>Solitaire</span></div><p id="hello"></p><div class="hardban" id="hban"><img id="hfi"><div><b>HARD LEVEL</b><span id="hbt"></span></div></div>
@@ -166,15 +170,19 @@ function deal(level,seed){
  while(sum<tabN){const i=ri(r,0,nC-1);if(L[i]<8){L[i]++;sum++}}
  let p=0;const cols=L.map(n=>{const c=ord.slice(p,p+n);p+=n;return c});const stock=ord.slice(p);
  const isB=id=>C[id].t=='b';
- // bury bases: move each base to a deep slot (tableau bottom or lower half of stock)
- if(globalThis.BURY!==0){const deep=[];cols.forEach(c=>{if(c.length>2)deep.push([c,0]);if(c.length>4)deep.push([c,1])});const half=Math.floor(stock.length*(hard?.5:.35));for(let q=0;q<half;q++)deep.push([stock,q]);
-  shuf(r,deep);const bs=[];[...cols,stock].forEach(a=>a.forEach((x,q)=>{if(isB(x))bs.push([a,q])}));
-  for(const [a,q] of bs){const pos=deep.findIndex(([b,p])=>!isB(b[p]));if(pos<0)break;const [b,p]=deep.splice(pos,1)[0];[a[q],b[p]]=[b[p],a[q]]}}
+ // place bases with variety: some buried in face-down spots, others anywhere; avoid clusters
+ {const sh=isSH(level),pb=sh?.3:hard?.25:.15,bs=[];[...cols,stock].forEach(a=>a.forEach((x,q)=>{if(isB(x))bs.push([a,q])}));
+  const spots=[];cols.forEach(c=>{for(let q=0;q<c.length-1;q++)spots.push([c,q])});for(let q=0;q<stock.length;q++)spots.push([stock,q]);
+  for(const [a,q] of bs){if(r()>pb)continue;for(let tr=0;tr<20;tr++){const [b,p]=spots[ri(r,0,spots.length-1)];if(isB(b[p]))continue;[a[q],b[p]]=[b[p],a[q]];break}}
+
+ const openStyle=r();
  let fu=0;const seen=new Set();cols.forEach(c=>{const k=c.length-1;let tr=0;
-  const allowDup=r()<(hard?.25:.45);
-  while(((seen.has(C[c[k]].v)&&!allowDup)||(isB(c[k])&&(hard||fu)))&&tr++<80){const j=ri(r,0,stock.length-1);if(isB(stock[j])||seen.has(C[stock[j]].v))continue;[c[k],stock[j]]=[stock[j],c[k]]}
+  const allowDup=openStyle<.65?r()<.6:r()<.2;
+  while(((seen.has(C[c[k]].v)&&!allowDup)||(isB(c[k])&&(hard||fu||openStyle>.75)))&&tr++<80){const j=ri(r,0,stock.length-1);if(isB(stock[j])||seen.has(C[stock[j]].v))continue;[c[k],stock[j]]=[stock[j],c[k]]}
   if(isB(c[k]))fu=1;seen.add(C[c[k]].v)});
  if(isB(tp(stock))){const j=stock.findIndex(x=>!isB(x));if(j>=0){const k=stock.length-1;[stock[k],stock[j]]=[stock[j],stock[k]]}}
+ for(let pass=0;pass<3;pass++){  for(let q=0;q+1<stock.length;q++)if(isB(stock[q])&&isB(stock[q+1])){for(let tr=0;tr<20;tr++){const j=ri(r,0,stock.length-1);if(Math.abs(j-q)>3&&!isB(stock[j])&&!(j>0&&isB(stock[j-1]))&&!(j+1<stock.length&&isB(stock[j+1]))){[stock[q+1],stock[j]]=[stock[j],stock[q+1]];break}}}
+  cols.forEach(c=>{for(let q=0;q+1<c.length-1;q++)if(isB(c[q])&&isB(c[q+1])){const j=ri(r,0,stock.length-1);if(!isB(stock[j]))[c[q+1],stock[j]]=[stock[j],c[q+1]]}})}}
  return{cols,down:cols.map(c=>c.length-1),stock,waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0})),fo:[]}}
 const cl=s=>({cols:s.cols.map(c=>c.slice()),down:s.down.slice(),stock:s.stock.slice(),waste:s.waste.slice(),f:s.f.map(x=>({b:x.b,n:x.n,lo:x.lo,g:x.g})),fo:(s.fo||[]).slice()});
 const canF=(s,id)=>{const c=C[id],f=s.f[c.s];return c.t=='b'?(!f.b&&act_(s)<CAP):(f.b&&f.n<SETS[c.s].k)};
@@ -213,6 +221,14 @@ function greedy(s0){const s=cl(s0);let d=0,hit=0,idle=0,cur=-1;
   if(!mv){const x=gen(s,1).find(x=>x.t=='bf'||x.t=='tt'||x.t=='wt');if(x){apply(s,x);mv=true;chk()}}
   if(!mv){if(!s.stock.length&&!s.waste.length)break;draw(s);d++;cur=tp(s.waste);idle++;if(idle>s.stock.length+s.waste.length+2)break}else idle=0}
  return{won:0,d,ir:d?hit/d:0}}
+function rplay(s0,rnd,cap,mcap){const s=cl(s0);let d=0,m=0;
+ for(let it=0;it<900;it++){if(won(s))return 1;if(m>=mcap)return 0;
+  const f=[];s.cols.forEach((c,i)=>{if(c.length&&canF(s,tp(c)))f.push(()=>toF(s,popC(s,i)))});if(s.waste.length&&canF(s,tp(s.waste)))f.push(()=>toF(s,s.waste.pop()));
+  const mv=gen(s,0).filter(x=>x.t!='d');const all=f.concat(mv.map(x=>()=>apply(s,x)));
+  if(all.length&&(rnd()<.85||!(s.stock.length||s.waste.length))){(f.length&&rnd()<.6?f[Math.floor(rnd()*f.length)]:all[Math.floor(rnd()*all.length)])();m++;continue}
+  if(!(s.stock.length||s.waste.length)||d>=cap)return 0;draw(s);d++}
+ return won(s)?1:0}
+function prate(s0,seed,n,dc,mc){const rr=rngF(seed);let w=0;for(let i=0;i<n;i++)w+=rplay(s0,rr,dc,mc);return w/n}
 // ---- storage / id
 const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const qp=new URLSearchParams(location.search),hp=new URLSearchParams(location.hash.slice(1));
@@ -221,16 +237,18 @@ let P,G;
 function loadP(){P=LS.get('neko:'+ID)||{level:1,used:[]};LS.set('neko:last',ID);const L=(LS.get('neko:players')||[]).filter(n=>n!=ID);L.unshift(ID);LS.set('neko:players',L.slice(0,12))}
 function saveP(){LS.set('neko:'+ID,P)}
 function start(){LS.set('neko:save:'+ID,null);const hard=isHard(P.level);let k=P.used.length,res,st,seed;
- let best=null;for(let t=0;t<40;t++){const sd=hs(ID+'|'+P.level+'|'+(k+t));if(P.used.includes(sd))continue;const s0=deal(P.level,sd);let r=solve(s0);if(!r)continue;
+ const LIM=(r,sh)=>({ml:sh?Math.ceil(r.m*1.1)+3:Math.ceil(r.m*1.5)+10,dl:sh?Math.ceil(r.d*1.15)+2:Math.max(Math.ceil((r.gd||r.d)*1.3),Math.ceil(r.d*2.2))+6});
+ const shL=isSH(P.level),tgt=shL?.05:hard?.3:.6,tol=shL?.15:hard?.15:.2;
+ let best=null;for(let t=0;t<200;t++){if(t>=40&&best)break;const sd=hs(ID+'|'+P.level+'|'+(k+t));if(P.used.includes(sd))continue;const s0=deal(P.level,sd);let r=solve(s0);if(!r)continue;
   const rr=rngF(sd^77);for(let q=0;q<3;q++){const x=solve(s0,rr);if(x)r={m:Math.min(r.m,x.m),d:Math.min(r.d,x.d)}}
-  const gr=greedy(s0),S=Math.max(1,s0.stock.length),gp=gr.won?gr.d/S:3,sc=gp-gr.ir;r.gd=gr.won?gr.d:r.d*2;
-  if(!best||sc>best.sc)best={seed:sd,res:r,sc};if(hard?(gp>=1.2&&gr.ir<.6):gr.ir<.72)break}
+  const L=LIM(r,shL),rate=prate(s0,sd,10,L.dl,L.ml),sc=-Math.abs(rate-tgt);
+  if(!best||sc>best.sc)best={seed:sd,res:r,sc};if(Math.abs(rate-tgt)<=tol)break}
  seed=best.seed;res=best.res;st=deal(P.level,seed);
  P.used.push(seed);saveP();
- const sh=isSH(P.level),ml=sh?Math.ceil(res.m*1.1)+3:Math.ceil(res.m*1.5)+10,dl=sh?Math.ceil(res.d*1.15)+2:Math.max(Math.ceil(res.gd*1.3),Math.ceil(res.d*2.2))+6;
+ const sh=shL,{ml,dl}=LIM(res,sh);
  G={s:st,moves:0,draws:0,undo:2,hist:[],ml,dl,sel:null,hard,sh,seed};show('app');render();if(hard)hardPop()}
-function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=13||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
-function persist(){if(G)LS.set('neko:save:'+ID,{ver:13,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
+function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=15||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
+function persist(){if(G)LS.set('neko:save:'+ID,{ver:15,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
 // ---- UI
 const OPS={'+':'<path d="M12 4v16M4 12h16"/>','−':'<path d="M4 12h16"/>','×':'<path d="M6 6l12 12M18 6L6 18"/>','÷':'<path d="M4 12h16"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>'};
 const fx=x=>x.replace(/[+−×÷]/,o=>`<svg class="op" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round">${OPS[o]}</svg>`);
@@ -300,8 +318,8 @@ function fly(r,node,to,toF){if(!to||!node)return;node.querySelectorAll&&node.que
 function flyFrom(el,fnF){const r=el&&el.getBoundingClientRect(),n=el&&el.cloneNode(true);fnF();if(r)fly(r,n,tgtEl(),LT&&LT.f!=null)}
 function confetti(){const cs=['#ff8fab','#7fbcef','#ffd36e','#b8e6c9','#ffc6d3'];for(let i=0;i<60;i++){const e=document.createElement('i');e.className='cf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDuration=1.6+Math.random()*1.6+'s';e.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(id){['welcome','home'].forEach(x=>$('#'+x).classList.toggle('on',x==id));$('#app').style.display=id=='app'?'block':'none'}
-function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==13)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
- if(v&&v.ver==13&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
+function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==15)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
+ if(v&&v.ver==15&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
 
 function act(f){snap();f();G.moves++;after()}
 $('#stock').onclick=()=>{const s=G.s;if(!s.stock.length){if(s.waste.length){snap();s.stock=s.waste.reverse();s.waste=[];G.sel=null;render()}return}
