@@ -214,9 +214,9 @@ function solve(s0,rnd){const seen=new Set();let nodes=0;
   const k=key(s);if(seen.has(k))return null;seen.add(k);
   for(const x of gen(s,1,rnd)){const n=cl(s);apply(n,x);const r=rec(n,m+(x.t=='d'?0:1),d+(x.t=='d'?1:0),dep+1);if(r)return r}return null}
  return rec(cl(s0),0,0,0)}
-function alive(s0,dl,ml){const seen=new Set();let nodes=0,capped=false;
+function alive(s0,dl,ml){const seen=new Map();let nodes=0,capped=false;
  function rec(s,m,d){if(capped)return false;if(++nodes>15000){capped=true;return false}m+=autoF(s);if(won(s))return true;if(m>ml)return false;
-  const k=key(s)+'|'+d;if(seen.has(k))return false;seen.add(k);
+  const k=key(s);const pm=seen.get(k);if(pm!=null&&pm<=m)return false;seen.set(k,m);
   for(const x of gen(s,0)){const n=cl(s);apply(n,x);if(rec(n,m+1,d+(x.t=='d'?1:0)))return true}return false}
  const ok=rec(cl(s0),0,0);return ok?'win':capped?'unknown':'dead'}
 function greedy(s0){const s=cl(s0);let d=0,hit=0,idle=0,cur=-1;
@@ -254,8 +254,8 @@ async function start(){if(start.busy)return;start.busy=1;$('#ld').classList.add(
  P.used.push(seed);saveP();
  const sh=shL,{ml,dl}=LIM(res,sh);
  G={s:st,moves:0,draws:0,undo:2,hist:[],ml,dl,sel:null,hard,sh,seed};show('app');render();if(hard)hardPop()}finally{start.busy=0;$('#ld').classList.remove('on')}}
-function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=17||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
-function persist(){if(G)LS.set('neko:save:'+ID,{ver:17,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
+function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=19||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
+function persist(){if(G)LS.set('neko:save:'+ID,{ver:19,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
 // ---- UI
 const OPS={'+':'<path d="M12 4v16M4 12h16"/>','−':'<path d="M4 12h16"/>','×':'<path d="M6 6l12 12M18 6L6 18"/>','÷':'<path d="M4 12h16"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>'};
 const fx=x=>x.replace(/[+−×÷]/,o=>`<svg class="op" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round">${OPS[o]}</svg>`);
@@ -267,8 +267,8 @@ function cardEl(id,face,grp,strip){const d=document.createElement('div');
   d.innerHTML=`<span class="num tl" style="color:${col}">${c.v}</span><span class="num br" style="color:${col}">${c.v}</span>`}
  else{d.className='card eq';d.innerHTML=`<img class="hd tl" src="${A.heads[c.h]}">${strip?`<div class="sl">${fx(c.x)}</div>`:grp?`<div class="ex sum">${c.v}<small>${grp} ใบ</small></div>`:`<div class="ex st">${fx2(c.x)}</div>`}<img class="hd br" src="${A.heads[c.h]}">`}
  return d}
-function size(){const n=Math.max(G.s.cols.length,CAP,4),gap=Math.min(8,Math.max(4,innerWidth/120));const cw=Math.min(132,Math.floor((Math.min(innerWidth,760)-24-gap*(n-1))/n));
- const r=document.documentElement.style;r.setProperty('--cw',cw+'px');r.setProperty('--ch',Math.round(cw*1.4)+'px');r.setProperty('--gap',gap+'px');return cw}
+function size(){const n=Math.max(G.s.cols.length,4),gap=Math.min(8,Math.max(4,innerWidth/120));const cw=Math.min(132,Math.floor((Math.min(innerWidth,760)-24-gap*(n-1))/n));
+ const r=document.documentElement.style;r.setProperty('--cw',cw+'px');r.setProperty('--ch',Math.round(cw*1.4)+'px');r.setProperty('--gap',gap+'px');const sw=Math.min(cw,Math.floor((Math.min(innerWidth,760)-24-gap*(CAP-1))/CAP)),F=$('#fnd');F.style.setProperty('--cw',sw+'px');F.style.setProperty('--ch',Math.round(sw*1.4)+'px');F.style.flexWrap='nowrap';return cw}
 function render(){const s=G.s,cw=size(),ch=cw*1.4;
  $('#lv').textContent='ด่าน '+P.level;const df=$('#df');const SHl=isSH(P.level);df.innerHTML=G.hard?`<img src="${A.fire}">${SHl?'SUPER HARD':'HARD LEVEL'}`:'กลาง';document.body.classList.toggle('hardmode',!!G.hard);document.body.classList.toggle('shmode',SHl);df.className='tag'+(G.hard?' hard':'')+(SHl?' sh':'');
  $('#mv').innerHTML=`เหลือ <b>${G.ml-G.moves}</b> ตา`;$('#mv').className='stat'+(G.ml-G.moves<=3?' warn':'');
@@ -294,14 +294,18 @@ function render(){const s=G.s,cw=size(),ch=cw*1.4;
    if(face&&k>=c.length-gg)e.dataset.drag='c'+i+':'+gg;if(G.sel&&G.sel.c===i&&k==c.length-1)e.classList.add('sel');col.appendChild(e);y+=face?(k<c.length-1?cw*.3:0):cw*.13});
   col.style.height=(c.length?y+ch:ch)+'px';T.appendChild(col)})}
 function snap(){G.hist.push({s:cl(G.s),moves:G.moves,draws:G.draws});if(G.hist.length>5)G.hist.shift()}
+function stuck(s){
+ // any useful tableau move?
+ for(let i=0;i<s.cols.length;i++){const c=s.cols[i];if(c.length&&canF(s,tp(c)))return false}
+ if(gen(s,0).some(x=>x.t=='bf'||(x.t=='tt'&&x.p===0)))return false;
+ // any card in stock/waste placeable to a set or onto a row?
+ for(const id of s.stock.concat(s.waste)){if(canF(s,id))return false;for(let j=0;j<s.cols.length;j++)if(wfit(s,id,j))return false}
+ return true}
 function after(){G.sel=null;render();const s=G.s;
- const mv=G.moves,dw=G.draws;if(won(s)){P.level++;saveP();LS.set('neko:save:'+ID,null);G=null;confetti();return modal(0,'เก่งมาก '+ID+'!',`ผ่านด่าน ${P.level-1} แล้ว 🎉`,'ด่านต่อไป',start,'Home',goHome)}
- if(G.moves>=G.ml)return over('ตาหมดแล้ว');
- const canAny=s.cols.some(c=>c.length&&canF(s,tp(c)))||(s.waste.length&&canF(s,tp(s.waste)))||gen(s).some(x=>x.t!='d'&&x.p<3);
- const canDraw=(s.stock.length||s.waste.length)&&G.moves<G.ml;
- if(!canAny&&!canDraw&&!gen(s).some(x=>x.t!='d'))return over('ไม่มีทางไปต่อแล้ว');
- const g0=G;clearTimeout(after._t);after._t=setTimeout(()=>{if(G!==g0||!G)return;const st=alive(G.s,1e9,G.ml-G.moves);
-  if(st=='dead'&&G===g0)over('ตาที่เหลือไม่พอให้ชนะแล้ว')},250)}
+ if(won(s)){P.level++;saveP();LS.set('neko:save:'+ID,null);G=null;confetti();return modal(0,'เก่งมาก '+ID+'!',`ผ่านด่าน ${P.level-1} แล้ว 🎉`,'ด่านต่อไป',start,'Home',goHome)}
+ if(G.moves>=G.ml)return over('ตาเดินหมดแล้ว');
+ if(stuck(s))return over('ไม่มีไพ่ไหนย้ายหรือวางได้แล้ว')}
+
 function over(m){document.querySelectorAll('.cf').forEach(x=>x.remove());LS.set('neko:save:'+ID,null);G=null;modal(1,'เทิร์นหมดแล้ว…',m+' ลองใหม่อีกครั้งนะ ไพ่จะสลับให้ใหม่','Replay',start,'Home',goHome)}
 function modal(sad,t,p,b,fn,b2,fn2){$('#mbox').className='box'+(sad?' sad':'');$('#mi').src=A.heads[sad?0:1];$('#mt').textContent=t;$('#mp').textContent=p;
  $('#mbox').querySelectorAll('.tear').forEach(x=>x.remove());if(sad)[[-14,0],[14,.7]].forEach(([x,d])=>{const e=document.createElement('i');e.className='tear';e.style.cssText=`left:calc(50% + ${x}px);top:-6px;animation-delay:${d}s`;$('#mbox').appendChild(e)});
@@ -327,12 +331,12 @@ function fly(r,node,to,toF){if(!to||!node)return;node.querySelectorAll&&node.que
 function flyFrom(el,fnF){const r=el&&el.getBoundingClientRect(),n=el&&el.cloneNode(true);fnF();if(r)fly(r,n,tgtEl(),LT&&LT.f!=null)}
 function confetti(){const cs=['#ff8fab','#7fbcef','#ffd36e','#b8e6c9','#ffc6d3'];for(let i=0;i<60;i++){const e=document.createElement('i');e.className='cf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDuration=1.6+Math.random()*1.6+'s';e.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(id){['welcome','home'].forEach(x=>$('#'+x).classList.toggle('on',x==id));$('#app').style.display=id=='app'?'block':'none'}
-function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==17)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
- if(v&&v.ver==17&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
+function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==19)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
+ if(v&&v.ver==19&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
 
-function act(f){snap();f();G.moves++;after()}
+function act(f){G.idle=0;snap();f();G.moves++;after()}
 $('#stock').onclick=()=>{const s=G.s;if(!s.stock.length){if(s.waste.length){snap();s.stock=s.waste.reverse();s.waste=[];G.sel=null;render()}return}
- if(G.moves>=G.ml)return;snap();for(let i=0;i<DN&&s.stock.length;i++)s.waste.push(s.stock.pop());G.draws++;G.moves++;G.anim=1;after()};
+ if(G.moves>=G.ml)return;snap();for(let i=0;i<DN&&s.stock.length;i++)s.waste.push(s.stock.pop());G.draws++;G.moves++;G.idle=(G.idle||0)+1;G.anim=1;after()};
 $('#waste').onclick=()=>{const s=G.s;if(!s.waste.length)return;G.sel=G.sel&&G.sel.w?null:{w:1};render()};
 function tapCol(i){const s=G.s,c=s.cols[i];
  if(G.sel){const sel=G.sel;if(sel.c===i){G.sel=null;return render()}
