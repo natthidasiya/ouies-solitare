@@ -243,7 +243,7 @@ let ID=qp.get('id')||hp.get('id')||LS.get('neko:last')||'';
 let P,G;
 function loadP(){P=LS.get('neko:'+ID)||{level:1,used:[]};LS.set('neko:last',ID);const L=(LS.get('neko:players')||[]).filter(n=>n!=ID);L.unshift(ID);LS.set('neko:players',L.slice(0,12))}
 function saveP(){LS.set('neko:'+ID,P)}
-async function start(){if(start.busy)return;start.busy=1;$('#ld').classList.add('on');await new Promise(r=>setTimeout(r,30));try{LS.set('neko:save:'+ID,null);const hard=isHard(P.level);let k=P.used.length,res,st,seed;
+async function start(){if(start.busy)return;start.busy=1;G=null;$('#ld').classList.add('on');await new Promise(r=>setTimeout(r,30));try{LS.set('neko:save:'+ID,null);const hard=isHard(P.level);let k=P.used.length,res,st,seed;
  const LIM=(r,sh)=>{const h=isHard(P.level);return{ml:r.m+r.d+(sh?11:h?13:15),dl:99999}};
  const shL=isSH(P.level),tgt=shL?.05:hard?.3:.6,tol=shL?.15:hard?.15:.2;
  let best=null;for(let t=0;t<300;t++){if(t>=40&&best)break;if(t%2==1)await new Promise(r=>setTimeout(r,0));const sd=hs(ID+'|'+P.level+'|'+(k+t));if(P.used.includes(sd))continue;const s0=deal(P.level,sd);let r=solve(s0);if(!r)continue;
@@ -269,7 +269,7 @@ function cardEl(id,face,grp,strip){const d=document.createElement('div');
  return d}
 function size(){const n=Math.max(G.s.cols.length,4),gap=Math.min(8,Math.max(4,innerWidth/120));const cw=Math.min(132,Math.floor((Math.min(innerWidth,760)-24-gap*(n-1))/n));
  const r=document.documentElement.style;r.setProperty('--cw',cw+'px');r.setProperty('--ch',Math.round(cw*1.4)+'px');r.setProperty('--gap',gap+'px');const sw=Math.min(cw,Math.floor((Math.min(innerWidth,760)-24-gap*(CAP-1))/CAP)),F=$('#fnd');F.style.setProperty('--cw',sw+'px');F.style.setProperty('--ch',Math.round(sw*1.4)+'px');F.style.flexWrap='nowrap';return cw}
-function render(){const s=G.s,cw=size(),ch=cw*1.4;
+function render(){if(!G)return;const s=G.s,cw=size(),ch=cw*1.4;
  $('#lv').textContent='ด่าน '+P.level;const df=$('#df');const SHl=isSH(P.level);df.innerHTML=G.hard?`<img src="${A.fire}">${SHl?'SUPER HARD':'HARD LEVEL'}`:'กลาง';document.body.classList.toggle('hardmode',!!G.hard);document.body.classList.toggle('shmode',SHl);df.className='tag'+(G.hard?' hard':'')+(SHl?' sh':'');
  $('#mv').innerHTML=`เหลือ <b>${G.ml-G.moves}</b> ตา`;$('#mv').className='stat'+(G.ml-G.moves<=3?' warn':'');
  $('#dr').innerHTML='';$('#dr').className='stat'+(G.dl-G.draws<=2?' warn':'');
@@ -302,7 +302,9 @@ function stuck(s){
  for(const id of s.stock.concat(s.waste)){if(canF(s,id))return false;for(let j=0;j<s.cols.length;j++)if(wfit(s,id,j))return false}
  return true}
 function after(){G.sel=null;render();const s=G.s;
- if(won(s)){P.level++;saveP();LS.set('neko:save:'+ID,null);G=null;confetti();return modal(0,'เก่งมาก '+ID+'!',`ผ่านด่าน ${P.level-1} แล้ว 🎉`,'ด่านต่อไป',start,'Home',goHome)}
+ const empty=!s.stock.length&&!s.waste.length&&s.cols.every(c=>!c.length);
+ if(!empty){let n=s.cols.reduce((a,c)=>a+c.length,0)+s.stock.length+s.waste.length;s.f.forEach(f=>n+=f.n+(f.b?1:0));if(n!=C.length)console.warn('card count mismatch',n,C.length)}
+ if(won(s)||empty){P.level++;saveP();LS.set('neko:save:'+ID,null);G=null;confetti();return modal(0,'เก่งมาก '+ID+'!',`ผ่านด่าน ${P.level-1} แล้ว 🎉`,'ด่านต่อไป',start,'Home',goHome)}
  if(G.moves>=G.ml)return over('ตาเดินหมดแล้ว');
  if(stuck(s))return over('ไม่มีไพ่ไหนย้ายหรือวางได้แล้ว')}
 
@@ -383,7 +385,7 @@ addEventListener('pagehide',cancelDrag);
 document.addEventListener('click',e=>{if(noClick){e.stopPropagation();e.preventDefault()}},true);
 $('#ud').onclick=()=>{if(!G.undo||!G.hist.length)return;const h=G.hist.pop();G.s=h.s;G.moves=h.moves;G.draws=h.draws;G.undo--;G.sel=null;render()};
 
-addEventListener('resize',()=>G&&render());
+addEventListener('resize',()=>{if(G&&!start.busy)render()});
 $('#wi').src=A.icon;$('#ldi').src=A.heads[0];$('#hi').src=A.heads[0];
 $('#go').onclick=()=>{const v=$('#nm').value.trim();if(!v)return $('#nm').focus();ID=v;loadP();goHome()};
 $('#nm').onkeydown=e=>{if(e.key=='Enter')$('#go').click()};
