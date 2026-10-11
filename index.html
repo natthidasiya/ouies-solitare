@@ -152,40 +152,47 @@ let C,SETS,CAP=9,DN=1;
 function opsFor(T){const o=[];if(T>=2)o.push(0);if(T<=98)o.push(1);for(let d=2;d<=9;d++)if(T%d==0&&T/d>=2&&T/d<=9){o.push(2);break}if(T<=49)o.push(3);return o}
 function eqFor(r,T,u,fo){for(let k=0;k<80;k++){const op=k<60?fo:ri(r,0,3);let s;
  if(op==0){if(T<2)continue;const a=ri(r,1,T-1);s=a+'+'+(T-a)}
- else if(op==1){if(T>98)continue;const b=ri(r,1,Math.min(T<10?9:30,99-T));s=(T+b)+'−'+b}
+ else if(op==1){if(T>98)continue;const b=ri(r,1,Math.min(T<10?9:20,99-T));s=(T+b)+'−'+b}
  else if(op==2){const f=[];for(let d=2;d<=9;d++)if(T%d==0&&T/d>=2&&T/d<=9)f.push(d);if(!f.length)continue;const d=f[ri(r,0,f.length-1)];s=d+'×'+T/d}
  else{const mx=Math.min(9,Math.floor(99/T));if(mx<2)continue;const b=ri(r,2,mx);s=T*b+'÷'+b}
  if(!u.has(s)){u.add(s);return s}}const a=ri(r,1,T-1);return a+'+'+(T-a)}
 function deal(level,seed){
- const r=rngF(seed),hard=isHard(level),nS=isSH(level)?10:hard?12:7,nC=isSH(level)?7:hard?ri(r,6,7):4;
- const tg=new Set();while(tg.size<nS)tg.add(r()<.4?ri(r,4,9):ri(r,10,60));
+ const r=rngF(seed),hard=isHard(level),SH=isSH(level),nS=SH?14:hard?13:10,nC=SH?6:hard?5:4;
+ const tg=new Set();while(tg.size<nS)tg.add(hard?ri(r,5,50):ri(r,3,30));
  const imgs=shuf(r,[...A.bases.keys()]);C=[];SETS=[];CAP=hard?5:4;DN=1;
- [...tg].forEach((t,s)=>{const k=isSH(level)?ri(r,3,8):ri(r,3,5);SETS.push({t,k,img:imgs[s]});
+ [...tg].forEach((t,s)=>{const k=SH?ri(r,4,8):ri(r,3,8);SETS.push({t,k,img:imgs[s]});
   C.push({t:'b',v:t,s,img:imgs[s]});const u=new Set();
-  const av=shuf(r,opsFor(t));for(let i=0;i<k;i++){const x=eqFor(r,t,u,av[i%av.length]);C.push({t:'e',v:t,s,x,o:x.match(/[+−×÷]/)[0],h:ri(r,0,A.heads.length-1)})}});
+  for(let i=0;i<k;i++){const q=r(),x=eqFor(r,t,u,q<.42?0:q<.84?1:q<.92?2:3);C.push({t:'e',v:t,s,x,o:x.match(/[+−×÷]/)[0],h:ri(r,0,A.heads.length-1)})}});
  C.forEach((c,i)=>c.id=i);
- const ord=shuf(r,C.map(c=>c.id));
- const tabN=Math.min(Math.round(C.length*(hard?.5:.45)),nC*8);
- const L=Array.from({length:nC},()=>ri(r,hard?3:2,8));
- let sum=L.reduce((a,b)=>a+b);
- while(sum>tabN){const i=ri(r,0,nC-1);if(L[i]>1){L[i]--;sum--}}
- while(sum<tabN){const i=ri(r,0,nC-1);if(L[i]<8){L[i]++;sum++}}
- let p=0;const cols=L.map(n=>{const c=ord.slice(p,p+n);p+=n;return c});const stock=ord.slice(p);
- const isB=id=>C[id].t=='b';
- // place bases with variety: some buried in face-down spots, others anywhere; avoid clusters
- {const sh=isSH(level),pb=sh?.3:hard?.25:.15,bs=[];[...cols,stock].forEach(a=>a.forEach((x,q)=>{if(isB(x))bs.push([a,q])}));
-  const spots=[];cols.forEach(c=>{for(let q=0;q<c.length-1;q++)spots.push([c,q])});for(let q=0;q<stock.length;q++)spots.push([stock,q]);
-  for(const [a,q] of bs){if(r()>pb)continue;for(let tr=0;tr<20;tr++){const [b,p]=spots[ri(r,0,spots.length-1)];if(isB(b[p]))continue;[a[q],b[p]]=[b[p],a[q]];break}}
-
- const openStyle=r();
- let fu=0;const seen=new Set();cols.forEach(c=>{const k=c.length-1;let tr=0;
-  const allowDup=openStyle<.65?r()<.6:r()<.2;
-  while(((seen.has(C[c[k]].v)&&!allowDup)||(isB(c[k])&&(hard||fu||openStyle>.75)))&&tr++<80){const j=ri(r,0,stock.length-1);if(isB(stock[j])||seen.has(C[stock[j]].v))continue;[c[k],stock[j]]=[stock[j],c[k]]}
-  if(isB(c[k]))fu=1;seen.add(C[c[k]].v)});
- if(isB(tp(stock))){const j=stock.findIndex(x=>!isB(x));if(j>=0){const k=stock.length-1;[stock[k],stock[j]]=[stock[j],stock[k]]}}
- for(let pass=0;pass<3;pass++){  for(let q=0;q+1<stock.length;q++)if(isB(stock[q])&&isB(stock[q+1])){for(let tr=0;tr<20;tr++){const j=ri(r,0,stock.length-1);if(Math.abs(j-q)>3&&!isB(stock[j])&&!(j>0&&isB(stock[j-1]))&&!(j+1<stock.length&&isB(stock[j+1]))){[stock[q+1],stock[j]]=[stock[j],stock[q+1]];break}}}
-  cols.forEach(c=>{for(let q=0;q+1<c.length-1;q++)if(isB(c[q])&&isB(c[q+1])){const j=ri(r,0,stock.length-1);if(!isB(stock[j]))[c[q+1],stock[j]]=[stock[j],c[q+1]]}})}}
- return{cols,down:cols.map(c=>c.length-1),stock,waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0})),fo:[]}}
+ const total=C.length,tabN=Math.min(Math.round(total*(hard?.48:.38)),nC*8);
+ const L=Array.from({length:nC},()=>ri(r,hard?4:2,8));let sum=L.reduce((a,b)=>a+b);
+ while(sum>tabN){const i=ri(r,0,nC-1);if(L[i]>1){L[i]--;sum--}}while(sum<tabN){const i=ri(r,0,nC-1);if(L[i]<8){L[i]++;sum++}}
+ const S=total-sum,pr=SH?.3:hard?.4:.55,pd=SH?.22:hard?.3:.45;
+ const pool=shuf(r,C.map(c=>c.id)),oc=L.map(n=>Array(n).fill(-1)),os=Array(S).fill(-1);
+ const s={cols:L.map((n,i)=>Array.from({length:n},(_,q)=>({p:[i,q]}))),down:L.map(n=>n-1),stock:Array.from({length:S},(_,q)=>({q})),waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0})),fo:[]};
+ const isN=x=>typeof x=='number';
+ const useful=id=>{if(canF(s,id))return true;const v=C[id].v;return s.cols.some(col=>col.length&&isN(tp(col))&&C[tp(col)].v==v)};
+ function pick(want,top){let k=-1;if(want){const cand=[];pool.forEach((id,i)=>{if(useful(id))cand.push(i)});if(cand.length)k=cand[ri(r,0,cand.length-1)]}
+  if(k<0){for(let t=0;t<12;t++){k=ri(r,0,pool.length-1);if(top&&C[pool[k]].t=='b'&&(hard||r()<.6))continue;break}}return pool.splice(k,1)[0]}
+ const fix=(cell,id)=>{if(cell.p)oc[cell.p[0]][cell.p[1]]=id;else os[cell.q]=id;return id};
+ const seenV=new Set();s.cols.forEach(col=>{let k=0;for(let t=0;t<15;t++){k=ri(r,0,pool.length-1);const id=pool[k];if((C[id].t=='b'&&(hard||r()<.7))||(seenV.has(C[id].v)&&r()<.75))continue;break}
+  const id=pool.splice(k,1)[0];seenV.add(C[id].v);col[col.length-1]=fix(col[col.length-1],id)});
+ const reveal=i=>{const col=s.cols[i];if(col.length&&!isN(tp(col)))col[col.length-1]=fix(tp(col),pick(r()<pr,1))};
+ const popc=i=>{const id=s.cols[i].pop();const n=s.cols[i].length;if(n&&s.down[i]>=n)s.down[i]=n-1;if(!n)s.down[i]=0;reveal(i);return id};
+ const runLen=i=>{const col=s.cols[i];let g=1;while(col.length-1-g>=s.down[i]&&C[col[col.length-1-g]].v==C[tp(col)].v)g++;return g};
+ let M=0,idle=0,ok=false;
+ for(let it=0;it<5000;it++){if(won(s)){ok=true;break}let mv=false;
+  for(let i=0;i<nC&&!mv;i++){const col=s.cols[i];if(col.length&&C[tp(col)].t=='e'&&canF(s,tp(col))){toF(s,popc(i));mv=true}}
+  if(!mv&&s.waste.length&&canF(s,tp(s.waste))){toF(s,s.waste.pop());mv=true}
+  for(let i=0;i<nC&&!mv;i++){const col=s.cols[i];if(col.length&&C[tp(col)].t=='b'&&canF(s,tp(col))){toF(s,popc(i));mv=true}}
+  for(let i=0;i<nC&&!mv;i++){const col=s.cols[i];if(!col.length)continue;const g=runLen(i);if(col.length-g>s.down[i]||col.length==g)continue;
+   for(let j=0;j<nC;j++){if(j==i)continue;const cj=s.cols[j];if((cj.length&&C[tp(cj)].v==C[tp(col)].v)||!cj.length){const run=col.splice(col.length-g,g);const n=col.length;if(n&&s.down[i]>=n)s.down[i]=n-1;if(!n)s.down[i]=0;cj.push(...run);reveal(i);mv=true;break}}}
+  if(!mv&&s.waste.length){const w=tp(s.waste);for(let j=0;j<nC;j++){const cj=s.cols[j];if(cj.length&&C[tp(cj)].v==C[w].v){cj.push(s.waste.pop());mv=true;break}}}
+  if(mv){M++;idle=0;continue}
+  if(!s.stock.length){if(!s.waste.length)break;s.stock=s.waste.reverse();s.waste=[];if(++idle>2)break;continue}
+  const cell=s.stock.pop();s.waste.push(isN(cell)?cell:fix(cell,pick(r()<pd,0)));M++}
+ if(!ok||pool.length)return null;
+ return{cols:oc,down:oc.map(c=>c.length-1),stock:os,waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0})),fo:[],gm:M}}
 const cl=s=>({cols:s.cols.map(c=>c.slice()),down:s.down.slice(),stock:s.stock.slice(),waste:s.waste.slice(),f:s.f.map(x=>({b:x.b,n:x.n,lo:x.lo,g:x.g})),fo:(s.fo||[]).slice()});
 const canF=(s,id)=>{const c=C[id],f=s.f[c.s];return c.t=='b'?(!f.b&&act_(s)<CAP):(f.b&&f.n<SETS[c.s].k)};
 const act_=s=>s.f.reduce((a,x,i)=>a+(x.b&&x.n<SETS[i].k?1:0),0);
@@ -244,18 +251,13 @@ let P,G;
 function loadP(){P=LS.get('neko:'+ID)||{level:1,used:[]};LS.set('neko:last',ID);const L=(LS.get('neko:players')||[]).filter(n=>n!=ID);L.unshift(ID);LS.set('neko:players',L.slice(0,12))}
 function saveP(){LS.set('neko:'+ID,P)}
 async function start(){if(start.busy)return;start.busy=1;G=null;$('#ld').classList.add('on');await new Promise(r=>setTimeout(r,30));try{LS.set('neko:save:'+ID,null);const hard=isHard(P.level);let k=P.used.length,res,st,seed;
- const LIM=(r,sh)=>{const h=isHard(P.level);return{ml:r.m+r.d+(sh?11:h?13:15),dl:99999}};
- const shL=isSH(P.level),tgt=shL?.05:hard?.3:.6,tol=shL?.15:hard?.15:.2;
- let best=null;for(let t=0;t<300;t++){if(t>=40&&best)break;if(t%2==1)await new Promise(r=>setTimeout(r,0));const sd=hs(ID+'|'+P.level+'|'+(k+t));if(P.used.includes(sd))continue;const s0=deal(P.level,sd);let r=solve(s0);if(!r)continue;
-  const rr=rngF(sd^77);for(let q=0;q<3;q++){const x=solve(s0,rr);if(x&&x.m+x.d<r.m+r.d)r=x}
-  const L=LIM(r,shL),rate=prate(s0,sd,10,L.ml,L.ml),sc=-Math.abs(rate-tgt);
-  if(!best||sc>best.sc)best={seed:sd,res:r,sc};if(Math.abs(rate-tgt)<=tol)break}
- seed=best.seed;res=best.res;st=deal(P.level,seed);
+ const sh=isSH(P.level);
+ for(let t=0;t<3000;t++){if(t%40==39)await new Promise(r=>setTimeout(r,0));const sd=hs(ID+'|'+P.level+'|'+(k+t));if(P.used.includes(sd))continue;const x=deal(P.level,sd);if(x){seed=sd;st=x;break}}
  P.used.push(seed);saveP();
- const sh=shL,{ml,dl}=LIM(res,sh);
+ const ml=st.gm+(sh?11:hard?13:15),dl=99999;
  G={s:st,moves:0,draws:0,undo:2,hist:[],ml,dl,sel:null,hard,sh,seed};show('app');render();if(hard)hardPop()}finally{start.busy=0;$('#ld').classList.remove('on')}}
-function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=19||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
-function persist(){if(G)LS.set('neko:save:'+ID,{ver:19,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
+function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=20||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
+function persist(){if(G)LS.set('neko:save:'+ID,{ver:20,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
 // ---- UI
 const OPS={'+':'<path d="M12 4v16M4 12h16"/>','−':'<path d="M4 12h16"/>','×':'<path d="M6 6l12 12M18 6L6 18"/>','÷':'<path d="M4 12h16"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>'};
 const fx=x=>x.replace(/[+−×÷]/,o=>`<svg class="op" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round">${OPS[o]}</svg>`);
@@ -333,8 +335,8 @@ function fly(r,node,to,toF){if(!to||!node)return;node.querySelectorAll&&node.que
 function flyFrom(el,fnF){const r=el&&el.getBoundingClientRect(),n=el&&el.cloneNode(true);fnF();if(r)fly(r,n,tgtEl(),LT&&LT.f!=null)}
 function confetti(){const cs=['#ff8fab','#7fbcef','#ffd36e','#b8e6c9','#ffc6d3'];for(let i=0;i<60;i++){const e=document.createElement('i');e.className='cf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDuration=1.6+Math.random()*1.6+'s';e.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(id){['welcome','home'].forEach(x=>$('#'+x).classList.toggle('on',x==id));$('#app').style.display=id=='app'?'block':'none'}
-function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==19)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
- if(v&&v.ver==19&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
+function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==20)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
+ if(v&&v.ver==20&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
 
 function act(f){G.idle=0;snap();f();G.moves++;after()}
 $('#stock').onclick=()=>{const s=G.s;if(!s.stock.length){if(s.waste.length){snap();s.stock=s.waste.reverse();s.waste=[];G.sel=null;render()}return}
