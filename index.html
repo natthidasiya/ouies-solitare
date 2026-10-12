@@ -150,15 +150,15 @@ function shuf(r,a){for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[
 const lvT=l=>[0,0,0,1,0,0,2][(l-1)%7],isHard=l=>lvT(l)>0,isSH=l=>lvT(l)==2;
 let C,SETS,CAP=9,DN=1;
 function opsFor(T){const o=[];if(T>=2)o.push(0);if(T<=98)o.push(1);for(let d=2;d<=9;d++)if(T%d==0&&T/d>=2&&T/d<=9){o.push(2);break}if(T<=49)o.push(3);return o}
-function eqFor(r,T,u,fo){for(let k=0;k<80;k++){const op=k<60?fo:ri(r,0,3);let s;
- if(op==0){if(T<2)continue;const a=ri(r,1,T-1);s=a+'+'+(T-a)}
- else if(op==1){if(T>98)continue;const b=ri(r,1,Math.min(T<10?9:20,99-T));s=(T+b)+'−'+b}
- else if(op==2){const f=[];for(let d=2;d<=9;d++)if(T%d==0&&T/d>=2&&T/d<=9)f.push(d);if(!f.length)continue;const d=f[ri(r,0,f.length-1)];s=d+'×'+T/d}
- else{const mx=Math.min(9,Math.floor(99/T));if(mx<2)continue;const b=ri(r,2,mx);s=T*b+'÷'+b}
- if(!u.has(s)){u.add(s);return s}}const a=ri(r,1,T-1);return a+'+'+(T-a)}
+function eqFor(r,T,u,fo){for(let k=0;k<80;k++){const op=k<50?fo:ri(r,0,1);let s;
+ if(op==0){if(T<2)continue;const b=ri(r,1,Math.min(9,T-1)),a=T-b;s=r()<.5?a+'+'+b:b+'+'+a}
+ else if(op==1){const b=ri(r,1,9);s=(T+b)+'−'+b}
+ else if(op==2){const f=[];for(let d=1;d<=9;d++)if(T%d==0&&T/d<=20&&!(d==1&&T>20))f.push(d);if(!f.length)continue;const d=f[ri(r,0,f.length-1)];s=r()<.5?(T/d)+'×'+d:d+'×'+(T/d)}
+ else{const mx=Math.min(5,Math.floor(50/T));if(mx<2)continue;const b=ri(r,2,mx);s=T*b+'÷'+b}
+ if(!u.has(s)){u.add(s);return s}}const b=ri(r,1,Math.min(9,T-1));return (T-b)+'+'+b}
 function deal(level,seed){
  const r=rngF(seed),hard=isHard(level),SH=isSH(level),nS=SH?14:hard?13:10,nC=SH?6:hard?5:4;
- const tg=new Set();while(tg.size<nS)tg.add(hard?ri(r,5,50):ri(r,3,30));
+ const tg=new Set();while(tg.size<nS)tg.add(hard?ri(r,5,40):ri(r,3,30));
  const imgs=shuf(r,[...A.bases.keys()]);C=[];SETS=[];CAP=hard?5:4;DN=1;
  [...tg].forEach((t,s)=>{const k=SH?ri(r,4,8):ri(r,3,8);SETS.push({t,k,img:imgs[s]});
   C.push({t:'b',v:t,s,img:imgs[s]});const u=new Set();
@@ -256,8 +256,8 @@ async function start(){if(start.busy)return;start.busy=1;G=null;$('#ld').classLi
  P.used.push(seed);saveP();
  const ml=st.gm+(sh?11:hard?13:15),dl=99999;
  G={s:st,moves:0,draws:0,undo:2,hist:[],ml,dl,sel:null,hard,sh,seed};show('app');render();if(hard)hardPop()}finally{start.busy=0;$('#ld').classList.remove('on')}}
-function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=20||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
-function persist(){if(G)LS.set('neko:save:'+ID,{ver:20,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
+function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=21||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
+function persist(){if(G)LS.set('neko:save:'+ID,{ver:21,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
 // ---- UI
 const OPS={'+':'<path d="M12 4v16M4 12h16"/>','−':'<path d="M4 12h16"/>','×':'<path d="M6 6l12 12M18 6L6 18"/>','÷':'<path d="M4 12h16"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>'};
 const fx=x=>x.replace(/[+−×÷]/,o=>`<svg class="op" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round">${OPS[o]}</svg>`);
@@ -335,8 +335,8 @@ function fly(r,node,to,toF){if(!to||!node)return;node.querySelectorAll&&node.que
 function flyFrom(el,fnF){const r=el&&el.getBoundingClientRect(),n=el&&el.cloneNode(true);fnF();if(r)fly(r,n,tgtEl(),LT&&LT.f!=null)}
 function confetti(){const cs=['#ff8fab','#7fbcef','#ffd36e','#b8e6c9','#ffc6d3'];for(let i=0;i<60;i++){const e=document.createElement('i');e.className='cf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDuration=1.6+Math.random()*1.6+'s';e.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(id){['welcome','home'].forEach(x=>$('#'+x).classList.toggle('on',x==id));$('#app').style.display=id=='app'?'block':'none'}
-function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==20)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
- if(v&&v.ver==20&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
+function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==21)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
+ if(v&&v.ver==21&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
 
 function act(f){G.idle=0;snap();f();G.moves++;after()}
 $('#stock').onclick=()=>{const s=G.s;if(!s.stock.length){if(s.waste.length){snap();s.stock=s.waste.reverse();s.waste=[];G.sel=null;render()}return}
