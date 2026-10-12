@@ -132,7 +132,7 @@ body.shmode #app{background:linear-gradient(180deg,rgba(123,47,247,.12),transpar
 <section class="scr" id="welcome"><div class="panel"><img class="ic" id="wi"><div class="logo">Ouies<br><span>Solitaire</span></div><p>ยินดีต้อนรับ! ตั้งชื่อนักเล่นของเธอก่อนนะ</p><input id="nm" maxlength="20" placeholder="ชื่อของเธอ"><button class="big" id="go">ไปกันเลย</button><div id="pls"></div></div></section>
 <section class="scr" id="home"><div class="panel"><img class="ic" id="hi"><div class="logo">Ouies <span>Solitaire</span></div><p id="hello"></p><div class="hardban" id="hban"><img id="hfi"><div><b>HARD LEVEL</b><span id="hbt"></span></div></div>
 <ol class="how"><li>ลากไพ่ <b>ฐานแมว</b> ขึ้นช่องด้านบน ช่องมี<b>น้อยกว่าจำนวนเซ็ต</b> (กลาง 5 ช่อง ยาก 4 ช่อง) เก็บเซ็ตให้ครบก่อนช่องจะว่าง</li><li>ลากไพ่โจทย์ที่ผลลัพธ์เท่าเลขฐาน เข้าเซ็ตจนครบ เช่น 0/6</li><li>ซ้อนไพ่ที่ผลลัพธ์เท่ากันในแถว เพื่อเปิดไพ่ที่คว่ำอยู่</li><li>ไพ่จากกองจั่ว เก็บพักในแถวที่เลขเท่ากันได้ หรือเข้าเซ็ตที่มีฐานแล้ว</li><li>ทุกการเดินและการจั่วนับเป็น 1 ตา ตามีจำกัด ย้อนได้ 2 ครั้งต่อด่าน</li></ol>
-<button class="big blue" id="rs"></button><button class="big" id="s1">เริ่มด่าน 1</button><span style="display:block;font-size:11px;color:var(--mut);margin-top:8px">เวอร์ชัน 26</span><span class="link" id="cn">👥 เปลี่ยนคนเล่น</span></div></section>
+<button class="big blue" id="rs"></button><button class="big" id="s1">เริ่มด่าน 1</button><span style="display:block;font-size:11px;color:var(--mut);margin-top:8px">เวอร์ชัน 27</span><span class="link" id="cn">👥 เปลี่ยนคนเล่น</span></div></section>
 <div id="app" style="display:none">
 <header><span class="lv" id="lv"></span><span class="tag" id="df"></span><span class="sp"></span>
 <span class="stat" id="mv"></span><span class="stat" id="dr"></span><span class="stat" id="sc"></span><button id="ud"></button><button class="hm" id="hb">🏠</button></header>
@@ -316,10 +316,9 @@ function render(){if(!G)return;const s=G.s,cw=size(),ch=cw*1.4;
   col.style.height=(c.length?y+ch:ch)+'px';T.appendChild(col)})}
 function snap(){G.hist.push({s:cl(G.s),moves:G.moves,draws:G.draws});if(G.hist.length>5)G.hist.shift()}
 function stuck(s){
- // any useful tableau move?
- for(let i=0;i<s.cols.length;i++){const c=s.cols[i];if(c.length&&canF(s,tp(c)))return false}
- if(gen(s,0).some(x=>x.t=='bf'||(x.t=='tt'&&x.p===0)))return false;
- // any card in stock/waste placeable to a set or onto a row?
+ for(let i=0;i<s.cols.length;i++){const c=s.cols[i];if(!c.length)continue;let gg=1;while(c.length-1-gg>=s.down[i]&&C[c[c.length-1-gg]].v==C[tp(c)].v)gg++;
+  for(let n=1;n<=gg;n++){const src='c'+i+':'+n;if(tryTo(src,'f',1))return false;
+   if(c.length>n)for(let j=0;j<s.cols.length;j++)if(j!=i&&tryTo(src,''+j,1)&&(n==gg))return false}}
  for(const id of s.stock.concat(s.waste)){if(canF(s,id))return false;for(let j=0;j<s.cols.length;j++)if(wfit(s,id,j))return false}
  return true}
 function after(){G.sel=null;render();const s=G.s;
@@ -358,8 +357,9 @@ function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.
  if(v&&v.ver==26&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
 
 function act(f){G.idle=0;snap();f();G.moves++;after()}
-$('#stock').onclick=()=>{const s=G.s;if(!s.stock.length){if(s.waste.length){snap();s.stock=s.waste.reverse();s.waste=[];G.sel=null;render()}return}
- if(G.moves>=G.ml)return;snap();for(let i=0;i<DN&&s.stock.length;i++)s.waste.push(s.stock.pop());G.draws++;G.moves++;G.idle=(G.idle||0)+1;G.anim=1;after()};
+$('#stock').addEventListener('pointerdown',e=>{e.preventDefault();drawNow()});
+function drawNow(){if(!G||$('#md').classList.contains('on'))return;const s=G.s;if(!s.stock.length){if(s.waste.length){snap();s.stock=s.waste.reverse();s.waste=[];G.sel=null;render()}return}
+ if(G.moves>=G.ml)return;snap();for(let i=0;i<DN&&s.stock.length;i++)s.waste.push(s.stock.pop());G.draws++;G.moves++;G.idle=(G.idle||0)+1;G.anim=1;after()}
 $('#waste').onclick=()=>{const s=G.s;if(!s.waste.length)return;G.sel=G.sel&&G.sel.w?null:{w:1};render()};
 function tapCol(i){const s=G.s,c=s.cols[i];
  if(G.sel){const sel=G.sel;if(sel.c===i){G.sel=null;return render()}
