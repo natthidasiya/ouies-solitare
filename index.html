@@ -167,7 +167,7 @@ function deal(level,seed){
  const total=C.length,tabN=Math.min(Math.round(total*(hard?.48:.38)),nC*8);
  const L=Array.from({length:nC},()=>ri(r,hard?4:2,8));let sum=L.reduce((a,b)=>a+b);
  while(sum>tabN){const i=ri(r,0,nC-1);if(L[i]>1){L[i]--;sum--}}while(sum<tabN){const i=ri(r,0,nC-1);if(L[i]<8){L[i]++;sum++}}
- const S=total-sum,pr=SH?.3:hard?.4:.55,pd=SH?.22:hard?.3:.45;
+ const S=total-sum,pr=SH?.3:hard?.4:.5,pd=SH?.15:hard?.2:.3;
  const pool=shuf(r,C.map(c=>c.id)),oc=L.map(n=>Array(n).fill(-1)),os=Array(S).fill(-1);
  const s={cols:L.map((n,i)=>Array.from({length:n},(_,q)=>({p:[i,q]}))),down:L.map(n=>n-1),stock:Array.from({length:S},(_,q)=>({q})),waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0})),fo:[]};
  const isN=x=>typeof x=='number';
@@ -180,19 +180,21 @@ function deal(level,seed){
  const reveal=i=>{const col=s.cols[i];if(col.length&&!isN(tp(col)))col[col.length-1]=fix(tp(col),pick(r()<pr,1))};
  const popc=i=>{const id=s.cols[i].pop();const n=s.cols[i].length;if(n&&s.down[i]>=n)s.down[i]=n-1;if(!n)s.down[i]=0;reveal(i);return id};
  const runLen=i=>{const col=s.cols[i];let g=1;while(col.length-1-g>=s.down[i]&&C[col[col.length-1-g]].v==C[tp(col)].v)g++;return g};
- let M=0,idle=0,ok=false;
+ let M=0,idle=0,ok=false,rec=0;
  for(let it=0;it<5000;it++){if(won(s)){ok=true;break}let mv=false;
-  for(let i=0;i<nC&&!mv;i++){const col=s.cols[i];if(col.length&&C[tp(col)].t=='e'&&canF(s,tp(col))){toF(s,popc(i));mv=true}}
+  for(let i=0;i<nC&&!mv;i++){const col=s.cols[i];if(!col.length)continue;const g=runLen(i),run=col.slice(col.length-g),st=C[run[0]].s,f=s.f[st],nb=run.filter(id=>C[id].t=='b').length,ne=g-nb;
+   const okRun=nb?(nb==1&&!f.b&&act_(s)<CAP&&ne<=SETS[st].k):(f.b&&f.n+ne<=SETS[st].k);
+   if(okRun&&(nb==0||g>1||true)){const ids=[];for(let q=0;q<g;q++)ids.push(popc(i));ids.sort((a,b)=>(C[b].t=='b')-(C[a].t=='b')).forEach(id=>toF(s,id));mv=true}}
   if(!mv&&s.waste.length&&canF(s,tp(s.waste))){toF(s,s.waste.pop());mv=true}
   for(let i=0;i<nC&&!mv;i++){const col=s.cols[i];if(col.length&&C[tp(col)].t=='b'&&canF(s,tp(col))){toF(s,popc(i));mv=true}}
   for(let i=0;i<nC&&!mv;i++){const col=s.cols[i];if(!col.length)continue;const g=runLen(i);if(col.length-g>s.down[i]||col.length==g)continue;
    for(let j=0;j<nC;j++){if(j==i)continue;const cj=s.cols[j];if((cj.length&&C[tp(cj)].v==C[tp(col)].v)||!cj.length){const run=col.splice(col.length-g,g);const n=col.length;if(n&&s.down[i]>=n)s.down[i]=n-1;if(!n)s.down[i]=0;cj.push(...run);reveal(i);mv=true;break}}}
   if(!mv&&s.waste.length){const w=tp(s.waste);for(let j=0;j<nC;j++){const cj=s.cols[j];if(cj.length&&C[tp(cj)].v==C[w].v){cj.push(s.waste.pop());mv=true;break}}}
   if(mv){M++;idle=0;continue}
-  if(!s.stock.length){if(!s.waste.length)break;s.stock=s.waste.reverse();s.waste=[];if(++idle>2)break;continue}
+  if(!s.stock.length){if(!s.waste.length)break;s.stock=s.waste.reverse();s.waste=[];rec++;if(++idle>2)break;continue}
   const cell=s.stock.pop();s.waste.push(isN(cell)?cell:fix(cell,pick(r()<pd,0)));M++}
  if(!ok||pool.length)return null;
- return{cols:oc,down:oc.map(c=>c.length-1),stock:os,waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0})),fo:[],gm:M}}
+ return{cols:oc,down:oc.map(c=>c.length-1),stock:os,waste:[],f:SETS.map(()=>({b:false,n:0,lo:null,g:0})),fo:[],gm:M,rec}}
 const cl=s=>({cols:s.cols.map(c=>c.slice()),down:s.down.slice(),stock:s.stock.slice(),waste:s.waste.slice(),f:s.f.map(x=>({b:x.b,n:x.n,lo:x.lo,g:x.g})),fo:(s.fo||[]).slice()});
 const canF=(s,id)=>{const c=C[id],f=s.f[c.s];return c.t=='b'?(!f.b&&act_(s)<CAP):(f.b&&f.n<SETS[c.s].k)};
 const act_=s=>s.f.reduce((a,x,i)=>a+(x.b&&x.n<SETS[i].k?1:0),0);
@@ -243,6 +245,20 @@ function rplay(s0,rnd,cap,mcap){const s=cl(s0);let d=0,m=0;
   if(!(s.stock.length||s.waste.length)||d>=cap)return 0;draw(s);d++}
  return won(s)?1:0}
 function prate(s0,seed,n,dc,mc){const rr=rngF(seed);let w=0;for(let i=0;i<n;i++)w+=rplay(s0,rr,dc,mc);return w/n}
+function replayR(s0,rnd){const s=cl(s0),nC=s.cols.length;let M=0,idle=0,rec=0;
+ const runLen=i=>{const col=s.cols[i];let g=1;while(col.length-1-g>=s.down[i]&&C[col[col.length-1-g]].v==C[tp(col)].v)g++;return g};
+ const order=()=>{const a=[...Array(nC).keys()];for(let i=nC-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+ for(let it=0;it<6000;it++){if(won(s))return{M,rec};let mv=false;const O=order();
+  for(const i of O){if(mv)break;const col=s.cols[i];if(!col.length)continue;const g=runLen(i),run=col.slice(col.length-g),st=C[run[0]].s,f=s.f[st],nb=run.filter(id=>C[id].t=='b').length,ne=g-nb;
+   if(nb?(nb==1&&!f.b&&act_(s)<CAP&&ne<=SETS[st].k):(f.b&&f.n+ne<=SETS[st].k)){const ids=[];for(let q=0;q<g;q++)ids.push(popC(s,i));ids.sort((a,b)=>(C[b].t=='b')-(C[a].t=='b')).forEach(id=>toF(s,id));mv=true}}
+  if(!mv&&s.waste.length&&canF(s,tp(s.waste))){toF(s,s.waste.pop());mv=true}
+  for(const i of O){if(mv)break;const col=s.cols[i];if(!col.length)continue;const g=runLen(i);if(col.length-g>s.down[i]||col.length==g)continue;
+   for(const j of order()){if(j==i)continue;const cj=s.cols[j];if((cj.length&&C[tp(cj)].v==C[tp(col)].v)||!cj.length){const run=[];for(let q=0;q<g;q++)run.unshift(popC(s,i));cj.push(...run);mv=true;break}}}
+  if(!mv&&s.waste.length){const w=tp(s.waste);for(const j of order()){if(wfit(s,w,j)){s.cols[j].push(s.waste.pop());mv=true;break}}}
+  if(mv){M++;idle=0;continue}
+  if(!s.stock.length){if(!s.waste.length)return null;s.stock=s.waste.reverse();s.waste=[];rec++;if(++idle>2)return null;continue}
+  s.waste.push(s.stock.pop());M++}return null}
+function bestPath(s0,seed,n){const rr=rngF(seed^991);let b=null;for(let i=0;i<n;i++){const x=replayR(s0,rr);if(x&&(!b||x.M<b.M))b=x}return b}
 // ---- storage / id
 const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const qp=new URLSearchParams(location.search),hp=new URLSearchParams(location.hash.slice(1));
@@ -252,12 +268,14 @@ function loadP(){P=LS.get('neko:'+ID)||{level:1,used:[]};LS.set('neko:last',ID);
 function saveP(){LS.set('neko:'+ID,P)}
 async function start(){if(start.busy)return;start.busy=1;G=null;$('#ld').classList.add('on');await new Promise(r=>setTimeout(r,30));try{LS.set('neko:save:'+ID,null);const hard=isHard(P.level);let k=P.used.length,res,st,seed;
  const sh=isSH(P.level);
- for(let t=0;t<3000;t++){if(t%40==39)await new Promise(r=>setTimeout(r,0));const sd=hs(ID+'|'+P.level+'|'+(k+t));if(P.used.includes(sd))continue;const x=deal(P.level,sd);if(x){seed=sd;st=x;break}}
+ let best=null,cands=0;for(let t=0;t<6000&&cands<40;t++){if(t%20==19)await new Promise(r=>setTimeout(r,0));const sd=hs(ID+'|'+P.level+'|'+(k+t));if(P.used.includes(sd))continue;const x=deal(P.level,sd);if(!x)continue;cands++;
+  const b=bestPath(x,sd,20);if(!b)continue;const sc=b.rec*1000-b.M;if(!best||sc>best.sc)best={sd,b,sc};if(b.rec>=1&&cands>=3)break}
+ seed=best.sd;st=deal(P.level,seed);st.gm=best.b.M;
  P.used.push(seed);saveP();
- const ml=st.gm+(sh?11:hard?13:15),dl=99999;
+ const ml=st.gm+(sh?3:hard?4:6),dl=99999;
  G={s:st,moves:0,draws:0,undo:2,hist:[],ml,dl,sel:null,hard,sh,seed};show('app');render();if(hard)hardPop()}finally{start.busy=0;$('#ld').classList.remove('on')}}
-function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=21||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
-function persist(){if(G)LS.set('neko:save:'+ID,{ver:21,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
+function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=23||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
+function persist(){if(G)LS.set('neko:save:'+ID,{ver:23,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
 // ---- UI
 const OPS={'+':'<path d="M12 4v16M4 12h16"/>','−':'<path d="M4 12h16"/>','×':'<path d="M6 6l12 12M18 6L6 18"/>','÷':'<path d="M4 12h16"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>'};
 const fx=x=>x.replace(/[+−×÷]/,o=>`<svg class="op" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round">${OPS[o]}</svg>`);
@@ -335,8 +353,8 @@ function fly(r,node,to,toF){if(!to||!node)return;node.querySelectorAll&&node.que
 function flyFrom(el,fnF){const r=el&&el.getBoundingClientRect(),n=el&&el.cloneNode(true);fnF();if(r)fly(r,n,tgtEl(),LT&&LT.f!=null)}
 function confetti(){const cs=['#ff8fab','#7fbcef','#ffd36e','#b8e6c9','#ffc6d3'];for(let i=0;i<60;i++){const e=document.createElement('i');e.className='cf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDuration=1.6+Math.random()*1.6+'s';e.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(id){['welcome','home'].forEach(x=>$('#'+x).classList.toggle('on',x==id));$('#app').style.display=id=='app'?'block':'none'}
-function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==21)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
- if(v&&v.ver==21&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
+function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==23)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
+ if(v&&v.ver==23&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
 
 function act(f){G.idle=0;snap();f();G.moves++;after()}
 $('#stock').onclick=()=>{const s=G.s;if(!s.stock.length){if(s.waste.length){snap();s.stock=s.waste.reverse();s.waste=[];G.sel=null;render()}return}
