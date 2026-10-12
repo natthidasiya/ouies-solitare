@@ -132,7 +132,7 @@ body.shmode #app{background:linear-gradient(180deg,rgba(123,47,247,.12),transpar
 <section class="scr" id="welcome"><div class="panel"><img class="ic" id="wi"><div class="logo">Ouies<br><span>Solitaire</span></div><p>ยินดีต้อนรับ! ตั้งชื่อนักเล่นของเธอก่อนนะ</p><input id="nm" maxlength="20" placeholder="ชื่อของเธอ"><button class="big" id="go">ไปกันเลย</button><div id="pls"></div></div></section>
 <section class="scr" id="home"><div class="panel"><img class="ic" id="hi"><div class="logo">Ouies <span>Solitaire</span></div><p id="hello"></p><div class="hardban" id="hban"><img id="hfi"><div><b>HARD LEVEL</b><span id="hbt"></span></div></div>
 <ol class="how"><li>ลากไพ่ <b>ฐานแมว</b> ขึ้นช่องด้านบน ช่องมี<b>น้อยกว่าจำนวนเซ็ต</b> (กลาง 5 ช่อง ยาก 4 ช่อง) เก็บเซ็ตให้ครบก่อนช่องจะว่าง</li><li>ลากไพ่โจทย์ที่ผลลัพธ์เท่าเลขฐาน เข้าเซ็ตจนครบ เช่น 0/6</li><li>ซ้อนไพ่ที่ผลลัพธ์เท่ากันในแถว เพื่อเปิดไพ่ที่คว่ำอยู่</li><li>ไพ่จากกองจั่ว เก็บพักในแถวที่เลขเท่ากันได้ หรือเข้าเซ็ตที่มีฐานแล้ว</li><li>ทุกการเดินและการจั่วนับเป็น 1 ตา ตามีจำกัด ย้อนได้ 2 ครั้งต่อด่าน</li></ol>
-<button class="big blue" id="rs"></button><button class="big" id="s1">เริ่มด่าน 1</button><span class="link" id="cn">👥 เปลี่ยนคนเล่น</span></div></section>
+<button class="big blue" id="rs"></button><button class="big" id="s1">เริ่มด่าน 1</button><span style="display:block;font-size:11px;color:var(--mut);margin-top:8px">เวอร์ชัน 23</span><span class="link" id="cn">👥 เปลี่ยนคนเล่น</span></div></section>
 <div id="app" style="display:none">
 <header><span class="lv" id="lv"></span><span class="tag" id="df"></span><span class="sp"></span>
 <span class="stat" id="mv"></span><span class="stat" id="dr"></span><span class="stat" id="sc"></span><button id="ud"></button><button class="hm" id="hb">🏠</button></header>
@@ -245,11 +245,12 @@ function rplay(s0,rnd,cap,mcap){const s=cl(s0);let d=0,m=0;
   if(!(s.stock.length||s.waste.length)||d>=cap)return 0;draw(s);d++}
  return won(s)?1:0}
 function prate(s0,seed,n,dc,mc){const rr=rngF(seed);let w=0;for(let i=0;i<n;i++)w+=rplay(s0,rr,dc,mc);return w/n}
-function replayR(s0,rnd){const s=cl(s0),nC=s.cols.length;let M=0,idle=0,rec=0;
+function replayR(s0,rnd){const s=cl(s0),nC=s.cols.length;let M=0,idle=0,rec=0;const wait=rnd()*.8,eager=rnd()<.5;
  const runLen=i=>{const col=s.cols[i];let g=1;while(col.length-1-g>=s.down[i]&&C[col[col.length-1-g]].v==C[tp(col)].v)g++;return g};
  const order=()=>{const a=[...Array(nC).keys()];for(let i=nC-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
  for(let it=0;it<6000;it++){if(won(s))return{M,rec};let mv=false;const O=order();
   for(const i of O){if(mv)break;const col=s.cols[i];if(!col.length)continue;const g=runLen(i),run=col.slice(col.length-g),st=C[run[0]].s,f=s.f[st],nb=run.filter(id=>C[id].t=='b').length,ne=g-nb;
+   const full=(nb?0:f.n)+ne==SETS[st].k;if(!full&&!eager&&rnd()<wait&&s.stock.length+s.waste.length>0)continue;
    if(nb?(nb==1&&!f.b&&act_(s)<CAP&&ne<=SETS[st].k):(f.b&&f.n+ne<=SETS[st].k)){const ids=[];for(let q=0;q<g;q++)ids.push(popC(s,i));ids.sort((a,b)=>(C[b].t=='b')-(C[a].t=='b')).forEach(id=>toF(s,id));mv=true}}
   if(!mv&&s.waste.length&&canF(s,tp(s.waste))){toF(s,s.waste.pop());mv=true}
   for(const i of O){if(mv)break;const col=s.cols[i];if(!col.length)continue;const g=runLen(i);if(col.length-g>s.down[i]||col.length==g)continue;
