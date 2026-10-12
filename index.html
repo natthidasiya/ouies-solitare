@@ -133,7 +133,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;overflow-x:hidden}#
 <section class="scr" id="welcome"><div class="panel"><img class="ic" id="wi"><div class="logo">Ouies<br><span>Solitaire</span></div><p>ยินดีต้อนรับ! ตั้งชื่อนักเล่นของเธอก่อนนะ</p><input id="nm" maxlength="20" placeholder="ชื่อของเธอ"><button class="big" id="go">ไปกันเลย</button><div id="pls"></div></div></section>
 <section class="scr" id="home"><div class="panel"><img class="ic" id="hi"><div class="logo">Ouies <span>Solitaire</span></div><p id="hello"></p><div class="hardban" id="hban"><img id="hfi"><div><b>HARD LEVEL</b><span id="hbt"></span></div></div>
 <ol class="how"><li>ลากไพ่ <b>ฐานแมว</b> ขึ้นช่องด้านบน ช่องมี<b>น้อยกว่าจำนวนเซ็ต</b> (กลาง 5 ช่อง ยาก 4 ช่อง) เก็บเซ็ตให้ครบก่อนช่องจะว่าง</li><li>ลากไพ่โจทย์ที่ผลลัพธ์เท่าเลขฐาน เข้าเซ็ตจนครบ เช่น 0/6</li><li>ซ้อนไพ่ที่ผลลัพธ์เท่ากันในแถว เพื่อเปิดไพ่ที่คว่ำอยู่</li><li>ไพ่จากกองจั่ว เก็บพักในแถวที่เลขเท่ากันได้ หรือเข้าเซ็ตที่มีฐานแล้ว</li><li>ทุกการเดินและการจั่วนับเป็น 1 ตา ตามีจำกัด ย้อนได้ 2 ครั้งต่อด่าน</li></ol>
-<button class="big blue" id="rs"></button><button class="big" id="s1">เริ่มด่าน 1</button><span style="display:block;font-size:11px;color:var(--mut);margin-top:8px">เวอร์ชัน 29</span><span class="link" id="cn">👥 เปลี่ยนคนเล่น</span></div></section>
+<button class="big blue" id="rs"></button><button class="big" id="s1">เริ่มด่าน 1</button><span style="display:block;font-size:11px;color:var(--mut);margin-top:8px">เวอร์ชัน 30</span><span class="link" id="cn">👥 เปลี่ยนคนเล่น</span></div></section>
 <div id="app" style="display:none">
 <header><span class="lv" id="lv"></span><span class="tag" id="df"></span><span class="sp"></span>
 <span class="stat" id="mv"></span><span class="stat" id="dr"></span><span class="stat" id="sc"></span><button id="ud"></button><button class="hm" id="hb">🏠</button></header>
@@ -206,7 +206,7 @@ const won=s=>s.f.every((x,i)=>x.b&&x.n==SETS[i].k);
 function autoF(s){let m=0,ch=true;while(ch){ch=false;
  for(let i=0;i<s.cols.length;i++){const c=s.cols[i];if(c.length&&C[tp(c)].t=='e'&&canF(s,tp(c))){toF(s,popC(s,i));m++;ch=true}}
  if(s.waste.length&&C[tp(s.waste)].t=='e'&&canF(s,tp(s.waste))){toF(s,s.waste.pop());m++;ch=true}}return m}
-const wfit=(s,id,j)=>!s.cols[j].length||C[tp(s.cols[j])].v==C[id].v;
+const wfit=(s,id,j)=>s.cols[j].length?C[tp(s.cols[j])].v==C[id].v:C[id].t=='b';
 const fits=(s,id,j)=>{const c=s.cols[j];if(!c.length)return true;return C[tp(c)].v==C[id].v};
 function gen(s,lim,rnd){const mv=[],n=s.cols.length;
  for(let i=0;i<n;i++){const c=s.cols[i];if(c.length&&C[tp(c)].t=='b'&&canF(s,tp(c)))mv.push({t:'bf',i,p:0})}
@@ -277,8 +277,8 @@ async function start(){if(start.busy)return;start.busy=1;G=null;$('#ld').classLi
  P.used.push(seed);saveP();
  const ml=st.gm+(sh?20:hard?15:10),dl=99999;
  G={s:st,moves:0,draws:0,undo:2,hist:[],ml,dl,sel:null,hard,sh,seed};show('app');render();if(hard)hardPop()}finally{start.busy=0;$('#ld').classList.remove('on')}}
-function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=28||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
-function persist(){if(G)LS.set('neko:save:'+ID,{ver:28,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
+function resume(){const v=LS.get('neko:save:'+ID);if(!v||v.ver!=30||v.level!=P.level)return start();deal(v.level,v.seed);G={s:v.s,moves:v.moves,draws:v.draws,undo:v.undo,hist:v.hist||[],ml:v.ml,dl:v.dl,sel:null,hard:isHard(v.level),seed:v.seed};show('app');render()}
+function persist(){if(G)LS.set('neko:save:'+ID,{ver:30,level:P.level,seed:G.seed,s:G.s,moves:G.moves,draws:G.draws,undo:G.undo,ml:G.ml,dl:G.dl,hist:G.hist.slice(-3)})}
 // ---- UI
 const OPS={'+':'<path d="M12 4v16M4 12h16"/>','−':'<path d="M4 12h16"/>','×':'<path d="M6 6l12 12M18 6L6 18"/>','÷':'<path d="M4 12h16"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>'};
 const fx=x=>x.replace(/[+−×÷]/,o=>`<svg class="op" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round">${OPS[o]}</svg>`);
@@ -338,7 +338,7 @@ function hardPop(){const sh=isSH(P.level);modal(0,sh?'SUPER HARD!!':'HARD LEVEL!
 function toast(m){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';document.body.appendChild(e)}e.innerHTML=m;e.className='on';clearTimeout(e._t);e._t=setTimeout(()=>e.className='',2200)}
 function why(src,dst){if(dst==null)return;const s=G.s,L=srcList(src);if(!L.length)return;const b=C[L[0]];
  if(dst=='f'){const top=C[L[L.length-1]],f=s.f[top.s];if(L.some(id=>C[id].t=='b')&&act_(s)>=CAP)return toast('ช่องเซ็ตเต็ม เก็บเซ็ตให้ครบก่อนนะ');if(top.t=='e'&&!f.b)return toast('ต้องวางไพ่ฐาน <b>'+top.v+'</b> ก่อน');return}
- const c=s.cols[+dst];if(!c.length)return;const a=C[tp(c)];
+ const c=s.cols[+dst];if(src=='w'&&!c.length&&b.t!='b'){toast('ไพ่จากกองจั่ว ลงแถวว่างได้เฉพาะแมวฐาน');return}if(!c.length)return;const a=C[tp(c)];
  if(a.v!=b.v)return toast('ค่าไม่เท่ากัน ('+b.v+' ≠ '+a.v+')');}
 let LT=null;
 function tgtEl(){if(!LT)return null;if(LT.f!=null){return document.querySelector(`#fnd .slot[data-set="${LT.f}"]`)||$('#fnd')}const col=document.querySelector(`[data-col="${LT.c}"]`);return col&&col.querySelector('.card:last-of-type')}
@@ -355,8 +355,8 @@ function fly(r,node,to,toF){if(!to||!node)return;node.querySelectorAll&&node.que
 function flyFrom(el,fnF){const r=el&&el.getBoundingClientRect(),n=el&&el.cloneNode(true);fnF();if(r)fly(r,n,tgtEl(),LT&&LT.f!=null)}
 function confetti(){const cs=['#ff8fab','#7fbcef','#ffd36e','#b8e6c9','#ffc6d3'];for(let i=0;i<60;i++){const e=document.createElement('i');e.className='cf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDuration=1.6+Math.random()*1.6+'s';e.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(id){['welcome','home'].forEach(x=>$('#'+x).classList.toggle('on',x==id));$('#app').style.display=id=='app'?'block':'none'}
-function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==28)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
- if(v&&v.ver==28&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
+function goHome(){G=null;show('home');{const v=LS.get('neko:save:'+ID),lv=(v&&v.ver==30)?v.level:P.level,h=isHard(lv);$('#hban').style.display=h?'flex':'none';const shl=isSH(lv);$('#hban b').textContent=shl?'SUPER HARD':'HARD LEVEL';$('#hban').classList.toggle('sh',shl);$('#hbt').textContent=shl?'ด่าน '+lv+' ไฟลุกท่วม! ตาเดินแทบไม่เผื่อ':'ด่าน '+lv+' ไฟลุกแล้ว! ตั้งสติก่อนลุย';$('#hi').src=h?A.fire:A.heads[0];$('#hfi').src=A.fire}$('#hello').textContent='สวัสดี '+ID+' 🐾';const v=LS.get('neko:save:'+ID),rs=$('#rs');
+ if(v&&v.ver==30&&v.level==P.level){rs.style.display='block';rs.textContent='▶ Resume ด่าน '+P.level}else if(P.level>1){rs.style.display='block';rs.textContent='▶ เล่นต่อ ด่าน '+P.level}else rs.style.display='none'}
 
 function act(f){G.idle=0;snap();f();G.moves++;after()}
 $('#stock').addEventListener('pointerdown',e=>{e.preventDefault();drawNow()});
